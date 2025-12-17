@@ -21,12 +21,8 @@ import {
   TrendingUp,
   Headphones,
 } from "lucide-react";
-
-
-// ============ CONSTANTS ============
-const LICENSES_TOTAL = 500;
-const LICENSES_SOLD = 481;
-const LICENSES_REMAINING = LICENSES_TOTAL - LICENSES_SOLD;
+import { testimonials, LICENSES_TOTAL, LICENSES_SOLD, LICENSES_REMAINING, COUNTDOWN_HOURS } from "./constants";
+import Image from "next/image";
 
 // ============ COMPONENTS ============
 
@@ -134,6 +130,31 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   );
 }
 
+// Star Rating Component
+function StarRating({ rating }: { rating: number }) {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating % 1 !== 0;
+
+  return (
+    <div className="flex gap-0.5">
+      {[...Array(fullStars)].map((_, i) => (
+        <Star key={i} className="w-4 h-4 fill-[#3B82F6] text-[#3B82F6]" />
+      ))}
+      {hasHalfStar && (
+        <div className="relative w-4 h-4">
+          <Star className="w-4 h-4 text-[#3B82F6] absolute" />
+          <div className="overflow-hidden w-1/2 absolute">
+            <Star className="w-4 h-4 fill-[#3B82F6] text-[#3B82F6]" />
+          </div>
+        </div>
+      )}
+      {[...Array(5 - Math.ceil(rating))].map((_, i) => (
+        <Star key={`empty-${i}`} className="w-4 h-4 text-[#333]" />
+      ))}
+    </div>
+  );
+}
+
 // Testimonial Card Component
 function TestimonialCard({
   name,
@@ -142,7 +163,8 @@ function TestimonialCard({
   quote,
   startAmount,
   currentAmount,
-  duration
+  duration,
+  stars = 5,
 }: {
   name: string;
   handle: string;
@@ -151,21 +173,32 @@ function TestimonialCard({
   startAmount: string;
   currentAmount: string;
   duration: string;
+  stars?: number;
 }) {
+  const [imgError, setImgError] = useState(false);
+  const initials = name.split(' ').map(n => n[0]).join('');
+
   return (
     <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6 card-hover">
       <div className="flex items-center gap-4 mb-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-[#3B82F6]/20 to-[#EF4444]/20 border border-[#1a1a1a] flex items-center justify-center text-white font-bold font-[family-name:var(--font-heading)]">
-          {avatar}
+        <div className="w-12 h-12 bg-gradient-to-br from-[#3B82F6]/20 to-[#EF4444]/20 border border-[#1a1a1a] flex items-center justify-center text-white font-bold font-[family-name:var(--font-heading)] overflow-hidden">
+          {!imgError ? (
+            <img
+              src={avatar}
+              alt={name}
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            initials
+          )}
         </div>
         <div>
           <div className="font-semibold text-white font-[family-name:var(--font-heading)]">{name}</div>
           <div className="text-sm text-[#3B82F6] font-[family-name:var(--font-body)]">{handle}</div>
         </div>
-        <div className="ml-auto flex gap-0.5">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} className="w-4 h-4 fill-[#3B82F6] text-[#3B82F6]" />
-          ))}
+        <div className="ml-auto">
+          <StarRating rating={stars} />
         </div>
       </div>
       <p className="text-[#aaa] mb-6 font-[family-name:var(--font-body)] leading-relaxed">&quot;{quote}&quot;</p>
@@ -239,8 +272,14 @@ function PricingCard({
             <span className="text-4xl font-bold text-white font-[family-name:var(--font-heading)]">{price}</span>
             <span className="text-[#666] font-[family-name:var(--font-body)]">USD</span>
           </div>
-          <div className="mt-2 text-sm text-[#888] font-[family-name:var(--font-body)]">
-            or <span className="text-[#3B82F6] font-medium">{cryptoPrice}</span> with crypto <span className="text-[#666]">(save {cryptoSavings})</span>
+          <div className="mt-3 flex items-center gap-2 p-2 border border-[#EF4444]/30 bg-[#EF4444]/5">
+            <span className="text-xl">🎄</span>
+            <div className="text-xs font-[family-name:var(--font-body)]">
+              <span className="text-[#888]">Christmas Special: </span>
+              <span className="text-[#3B82F6] font-medium">{cryptoPrice}</span>
+              <span className="text-[#888]"> with crypto </span>
+              <span className="text-[#EF4444] font-semibold">(save {cryptoSavings})</span>
+            </div>
           </div>
         </div>
 
@@ -308,21 +347,105 @@ function SocialProofTicker() {
   );
 }
 
+// Countdown Timer Component (6 hours)
+function CountdownTimer() {
+  const [timeLeft, setTimeLeft] = useState(() => {
+    // Initialize with COUNTDOWN_HOURS
+    return {
+      hours: COUNTDOWN_HOURS,
+      minutes: 0,
+      seconds: 0,
+    };
+  });
+
+  useEffect(() => {
+    // Check for saved end time in localStorage
+    const savedEndTime = localStorage.getItem('apex_countdown_end');
+    let endTime: number;
+
+    if (savedEndTime) {
+      endTime = parseInt(savedEndTime);
+      // If the saved time has passed, reset it
+      if (endTime < Date.now()) {
+        endTime = Date.now() + (COUNTDOWN_HOURS * 60 * 60 * 1000);
+        localStorage.setItem('apex_countdown_end', endTime.toString());
+      }
+    } else {
+      endTime = Date.now() + (COUNTDOWN_HOURS * 60 * 60 * 1000);
+      localStorage.setItem('apex_countdown_end', endTime.toString());
+    }
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const diff = endTime - now;
+
+      if (diff <= 0) {
+        // Reset the timer
+        endTime = Date.now() + (COUNTDOWN_HOURS * 60 * 60 * 1000);
+        localStorage.setItem('apex_countdown_end', endTime.toString());
+        setTimeLeft({ hours: COUNTDOWN_HOURS, minutes: 0, seconds: 0 });
+      } else {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft({ hours, minutes, seconds });
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-1 text-sm font-mono">
+      <div className="bg-[#111] border border-[#222] px-2 py-1">
+        <span className="text-white font-bold">{String(timeLeft.hours).padStart(2, "0")}</span>
+        <span className="text-[#666]">h</span>
+      </div>
+      <span className="text-[#444]">:</span>
+      <div className="bg-[#111] border border-[#222] px-2 py-1">
+        <span className="text-white font-bold">{String(timeLeft.minutes).padStart(2, "0")}</span>
+        <span className="text-[#666]">m</span>
+      </div>
+      <span className="text-[#444]">:</span>
+      <div className="bg-[#111] border border-[#222] px-2 py-1">
+        <span className="text-white font-bold">{String(timeLeft.seconds).padStart(2, "0")}</span>
+        <span className="text-[#666]">s</span>
+      </div>
+    </div>
+  );
+}
+
+// Scroll to pricing helper
+function scrollToPricing() {
+  const pricingSection = document.getElementById('pricing-section');
+  if (pricingSection) {
+    pricingSection.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
 // Sticky CTA Bar
 function StickyCTABar({ isVisible }: { isVisible: boolean }) {
   return (
     <div className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${isVisible ? "translate-y-0" : "translate-y-full"}`}>
       <div className="bg-black border-t border-[#1a1a1a] px-4 py-4">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <div className="text-sm font-[family-name:var(--font-body)]">
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+            <div className="hidden sm:flex items-center gap-2 text-sm font-[family-name:var(--font-body)]">
+              <span className="text-xl">🎄</span>
+              <span className="text-[#EF4444] font-semibold">Christmas Crypto Bonus Active</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm font-[family-name:var(--font-body)]">
               <span className="text-[#666]">Only </span>
               <span className="text-[#EF4444] font-semibold">{LICENSES_REMAINING} spots</span>
-              <span className="text-[#666]"> remaining</span>
+              <span className="text-[#666]"> left</span>
             </div>
+            <CountdownTimer />
           </div>
-          <button className="btn-primary px-8 py-3 font-semibold text-sm font-[family-name:var(--font-heading)]">
-            Get Instant Access
+          <button
+            onClick={scrollToPricing}
+            className="btn-primary px-8 py-3 font-semibold text-sm font-[family-name:var(--font-heading)]"
+          >
+            Claim Your Spot
           </button>
         </div>
       </div>
@@ -334,14 +457,14 @@ function StickyCTABar({ isVisible }: { isVisible: boolean }) {
 export default function Home() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const [showExitPopup, setShowExitPopup] = useState(false);
-  const heroRef = useRef<HTMLDivElement>(null);
+  const pricingRef = useRef<HTMLDivElement>(null);
 
-  // Handle scroll for sticky CTA
+  // Handle scroll for sticky CTA - show after pricing section
   useEffect(() => {
     const handleScroll = () => {
-      if (heroRef.current) {
-        const heroBottom = heroRef.current.getBoundingClientRect().bottom;
-        setShowStickyCTA(heroBottom < 0);
+      if (pricingRef.current) {
+        const pricingBottom = pricingRef.current.getBoundingClientRect().bottom;
+        setShowStickyCTA(pricingBottom < 0);
       }
     };
 
@@ -385,7 +508,7 @@ export default function Home() {
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={() => setShowExitPopup(false)}
+                  onClick={() => { setShowExitPopup(false); scrollToPricing(); }}
                   className="w-full btn-primary py-4 font-semibold font-[family-name:var(--font-heading)]"
                 >
                   Get Instant Access
@@ -396,7 +519,7 @@ export default function Home() {
                 >
                   No thanks, I&apos;ll keep trading manually
                 </button>
-              </div>
+        </div>
             </div>
           </div>
         </div>
@@ -404,11 +527,11 @@ export default function Home() {
 
       <main className="min-h-screen bg-black overflow-hidden">
         {/* ============ HERO SECTION ============ */}
-        <section ref={heroRef} className="relative min-h-screen flex flex-col justify-center gradient-hero">
-          {/* Animated gradient orbs */}
-          <div className="orb-blue" style={{ top: "-10%", left: "-10%" }} />
-          <div className="orb-red" style={{ bottom: "10%", right: "-5%" }} />
-          <div className="orb-purple" style={{ top: "40%", right: "20%" }} />
+        <section className="relative min-h-screen flex flex-col justify-center gradient-hero">
+          {/* Animated gradient orbs - subtle */}
+          <div className="orb-blue opacity-20" style={{ top: "-10%", left: "-10%" }} />
+          <div className="orb-red opacity-15" style={{ bottom: "10%", right: "-5%" }} />
+          <div className="orb-purple opacity-10" style={{ top: "40%", right: "20%" }} />
 
           {/* Header */}
           <header className="absolute top-0 left-0 right-0 z-20">
@@ -439,20 +562,23 @@ export default function Home() {
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-[1.1] font-[family-name:var(--font-heading)]">
-              You&apos;re Being <span className="text-[#3B82F6]">Lied To.</span>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-6 leading-[1.1] font-[family-name:var(--font-heading)]">
+              You&apos;re Being <span className="text-[#3B82F6] font-black">Lied To.</span>
               <br />
-              <span className="text-[#666]">And You Know It.</span>
+              <span className="text-[#888] font-bold">And You Know It.</span>
             </h1>
 
             {/* Subheadline */}
-            <p className="text-lg md:text-xl text-[#888] max-w-2xl mx-auto mb-10 leading-relaxed font-[family-name:var(--font-body)]">
+            <p className="text-lg md:text-xl text-[#aaa] max-w-2xl mx-auto mb-10 leading-relaxed font-[family-name:var(--font-body)] font-medium">
               Every guru. Every course. Every &quot;follow my signals&quot; Telegram channel.
-              They&apos;re selling you the <span className="text-[#EF4444] font-medium">same broken dream.</span>
+              They&apos;re selling you the <span className="text-[#EF4444] font-bold">same broken dream.</span>
             </p>
 
             {/* CTA Button */}
-            <button className="btn-primary px-10 py-4 font-semibold text-base mb-8 font-[family-name:var(--font-heading)]">
+            <button
+              onClick={scrollToPricing}
+              className="btn-primary px-10 py-4 font-semibold text-base mb-8 font-[family-name:var(--font-heading)]"
+            >
               Get Instant Access
             </button>
 
@@ -460,15 +586,15 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-8 text-sm font-[family-name:var(--font-body)]">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#3B82F6]" />
-                <span className="text-[#888]"><span className="text-white font-medium">400+</span> Profitable Traders</span>
+                <span className="text-[#aaa]"><span className="text-white font-bold">400+</span> Profitable Traders</span>
               </div>
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-[#3B82F6]" />
-                <span className="text-[#888]"><span className="text-white font-medium">14</span> Currency Pairs</span>
+                <span className="text-[#aaa]"><span className="text-white font-bold">14</span> Currency Pairs</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-[#3B82F6]" />
-                <span className="text-[#888]"><span className="text-white font-medium">24/7</span> Automated</span>
+                <span className="text-[#aaa]"><span className="text-white font-bold">24/7</span> Automated</span>
               </div>
             </div>
           </div>
@@ -1076,10 +1202,12 @@ export default function Home() {
                 MEET <span className="text-[#3B82F6]">APEX PROTOCOL™</span>
               </h2>
               <p className="text-lg text-[#EF4444] mb-4 font-[family-name:var(--font-heading)] font-semibold">THE EMOTIONAL EXORCISM</p>
-              <p className="text-[#888] max-w-2xl mx-auto font-[family-name:var(--font-body)] leading-relaxed">
+              <p className="text-[#888] max-w-2xl mx-auto font-[family-name:var(--font-body)] leading-relaxed mb-8">
                 A neural adaptive system that thinks faster than you, reacts faster than you,
                 and executes <span className="text-white font-medium">without the psychological baggage</span> destroying your account.
               </p>
+
+              <Image src="/apex.png" alt="APEX Protocol" width={1000} height={1000} />
             </div>
 
             {/* Feature Cards */}
@@ -1139,6 +1267,398 @@ export default function Home() {
                 </p>
               </div>
             </div>
+
+            {/* AI Revolution Section */}
+            <div className="mt-16 space-y-16">
+              {/* 2026 Dividing Line */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-black">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-8 font-[family-name:var(--font-heading)] text-center">
+                  WHY 2026 IS THE <span className="text-[#EF4444]">&quot;BEFORE AI&quot;</span> VS <span className="text-[#3B82F6]">&quot;AFTER AI&quot;</span> DIVIDING LINE
+                </h3>
+
+                <div className="space-y-6 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed">
+                  <p>Let me show you something that&apos;ll blow your mind.</p>
+
+                  <p>
+                    <span className="text-white font-semibold">Remember 2022?</span> Everyone laughed at AI. &quot;It&apos;s just a gimmick.&quot; &quot;It&apos;ll never replace humans.&quot;
+                  </p>
+
+                  <p>
+                    <span className="text-white font-semibold">Then ChatGPT dropped.</span>
+                  </p>
+
+                  <p>
+                    In 18 months, AI went from &quot;interesting experiment&quot; to <span className="text-white font-semibold">running Fortune 500 companies.</span>
+                  </p>
+
+                  <p className="text-white font-semibold">Now look at trading:</p>
+                </div>
+
+                {/* Comparison Grid */}
+                <div className="grid md:grid-cols-2 gap-6 mt-8">
+                  <div className="bg-[#0a0a0a] border border-[#EF4444]/30 p-6">
+                    <div className="text-xs uppercase tracking-widest text-[#EF4444] mb-4 font-[family-name:var(--font-body)]">Traditional Bots (Pre-2024)</div>
+                    <ul className="space-y-2 text-[#888] font-[family-name:var(--font-body)] text-sm">
+                      <li className="flex items-start gap-2"><XCircle className="w-4 h-4 text-[#EF4444] flex-shrink-0 mt-0.5" /> Follow IF/THEN rules like a calculator</li>
+                      <li className="flex items-start gap-2"><XCircle className="w-4 h-4 text-[#EF4444] flex-shrink-0 mt-0.5" /> Can&apos;t adapt when market conditions change</li>
+                      <li className="flex items-start gap-2"><XCircle className="w-4 h-4 text-[#EF4444] flex-shrink-0 mt-0.5" /> Break during high volatility</li>
+                      <li className="flex items-start gap-2"><XCircle className="w-4 h-4 text-[#EF4444] flex-shrink-0 mt-0.5" /> Require constant manual updates</li>
+                      <li className="flex items-start gap-2"><span className="text-[#EF4444] font-semibold">Win rate: 52-58%</span></li>
+                    </ul>
+                  </div>
+                  <div className="bg-[#0a0a0a] border border-[#3B82F6]/30 p-6">
+                    <div className="text-xs uppercase tracking-widest text-[#3B82F6] mb-4 font-[family-name:var(--font-body)]">AI-Powered Systems (2025+)</div>
+                    <ul className="space-y-2 text-[#888] font-[family-name:var(--font-body)] text-sm">
+                      <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-[#3B82F6] flex-shrink-0 mt-0.5" /> <span className="text-white font-medium">Learn</span> from millions of price patterns in real-time</li>
+                      <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-[#3B82F6] flex-shrink-0 mt-0.5" /> <span className="text-white font-medium">Adapt</span> to changing volatility, correlations, sentiment</li>
+                      <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-[#3B82F6] flex-shrink-0 mt-0.5" /> <span className="text-white font-medium">Predict</span> institutional moves before they happen</li>
+                      <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-[#3B82F6] flex-shrink-0 mt-0.5" /> <span className="text-white font-medium">Self-optimize</span> without human intervention</li>
+                      <li className="flex items-start gap-2"><span className="text-[#3B82F6] font-semibold">Win rate: 64-71%</span></li>
+                    </ul>
+                  </div>
+                </div>
+
+                <p className="text-center text-white font-semibold mt-8 text-lg font-[family-name:var(--font-heading)]">
+                  The gap isn&apos;t small. It&apos;s <span className="text-[#3B82F6]">EXPONENTIAL.</span>
+                </p>
+              </div>
+
+              {/* What Just Happened */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-[#0a0a0a]">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-8 font-[family-name:var(--font-heading)] text-center">
+                  HERE&apos;S WHAT JUST HAPPENED IN FOREX <span className="text-[#888]">(And Nobody&apos;s Talking About It)</span>
+                </h3>
+
+                <div className="space-y-4 mb-8">
+                  {[
+                    { date: "January 2024", text: "Major hedge funds started deploying GPT-4 integrated trading systems." },
+                    { date: "June 2024", text: "Goldman Sachs published a report: \"AI-driven trading systems outperformed human traders by 340% in volatile market conditions.\"" },
+                    { date: "October 2024", text: "The top 15 most profitable forex funds all use AI-powered execution." },
+                    { date: "December 2024", text: "Retail bots without AI integration saw a 67% failure rate. AI-integrated systems? 12% failure rate." },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-4 border-b border-[#1a1a1a] pb-4">
+                      <span className="text-[#3B82F6] font-semibold text-sm whitespace-nowrap font-[family-name:var(--font-body)]">{item.date}:</span>
+                      <span className="text-[#aaa] font-[family-name:var(--font-body)]">{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="text-center">
+                  <p className="text-white font-semibold mb-4 font-[family-name:var(--font-body)]">The writing is on the wall:</p>
+                  <p className="text-[#EF4444] font-semibold text-lg font-[family-name:var(--font-heading)]">
+                    If your bot doesn&apos;t have neural learning, you&apos;re driving a horse and buggy on a highway.
+                  </p>
+                </div>
+
+                {/* Projection Image */}
+                <div className="mt-8">
+                  <Image src="/projection.png" alt="AI Trading Projection" width={1000} height={600} className="w-full h-auto" />
+                </div>
+              </div>
+
+              {/* Why APEX is Different */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-black">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-8 font-[family-name:var(--font-heading)] text-center">
+                  WHY APEX ISN&apos;T LIKE THOSE <span className="text-[#EF4444]">$49 &quot;EAs&quot;</span> YOU SEE ON FORUMS
+                </h3>
+
+                <div className="space-y-6 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed mb-8">
+                  <p>Most retail bots are built by:</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2"><XCircle className="w-4 h-4 text-[#EF4444]" /> Freelance coders copying 2018 strategies</div>
+                    <div className="flex items-center gap-2"><XCircle className="w-4 h-4 text-[#EF4444]" /> Marketers who&apos;ve never traded in their life</div>
+                    <div className="flex items-center gap-2"><XCircle className="w-4 h-4 text-[#EF4444]" /> &quot;Gurus&quot; recycling MT4 scripts from forums</div>
+                  </div>
+
+                  <p><span className="text-white font-semibold">They have ZERO AI integration.</span> They&apos;re just fancy IF/THEN statements.</p>
+
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4 text-center">
+                    <p className="text-[#888] italic">&quot;IF RSI crosses 30, THEN buy.&quot;</p>
+                    <p className="text-[#666] text-sm mt-2">Cool. A 12-year-old could code that.</p>
+                  </div>
+
+                  <p className="text-white font-semibold text-lg">Here&apos;s what APEX actually does:</p>
+                </div>
+              </div>
+
+              {/* Machine Learning */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-[#0a0a0a]">
+                <div className="flex items-center gap-3 mb-6">
+                  <Brain className="w-8 h-8 text-[#3B82F6]" />
+                  <h3 className="text-xl font-bold text-white font-[family-name:var(--font-heading)]">1. MACHINE LEARNING PATTERN RECOGNITION</h3>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-[#EF4444] mb-3 font-[family-name:var(--font-body)]">Traditional Bot Sees:</div>
+                    <div className="bg-black border border-[#1a1a1a] p-4 text-[#888] font-[family-name:var(--font-body)]">
+                      &quot;Price bounced off support.&quot;
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-[#3B82F6] mb-3 font-[family-name:var(--font-body)]">APEX Sees:</div>
+                    <div className="bg-black border border-[#3B82F6]/30 p-4 text-sm font-mono text-[#3B82F6]">
+                      &quot;Price bounced off support 0.0847, but DXY correlation is -0.91, institutional flow indicators show net selling, order book depth at this level is 43% below average, similar patterns in the last 180 days resulted in false breakouts 71% of the time within 4 hours, probability of sustained bounce: 31%, action: DO NOT ENTER.&quot;
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-center text-[#888] font-[family-name:var(--font-body)]">
+                  <span className="text-white font-semibold">All in 0.4 seconds.</span> It&apos;s not following rules. <span className="text-[#3B82F6] font-semibold">It&apos;s thinking.</span>
+                </p>
+              </div>
+
+              {/* Real-Time Adaptive Learning */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-black">
+                <div className="flex items-center gap-3 mb-6">
+                  <Zap className="w-8 h-8 text-[#EF4444]" />
+                  <h3 className="text-xl font-bold text-white font-[family-name:var(--font-heading)]">2. REAL-TIME ADAPTIVE LEARNING</h3>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-start gap-4 border-l-2 border-[#3B82F6] pl-4">
+                    <div>
+                      <span className="text-[#3B82F6] font-semibold font-[family-name:var(--font-body)]">January 2025:</span>
+                      <span className="text-[#888] font-[family-name:var(--font-body)]"> Market is trending.</span>
+                      <p className="text-white font-[family-name:var(--font-body)]">APEX optimizes for: Momentum strategies, trailing stops, breakout entries.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 border-l-2 border-[#EF4444] pl-4">
+                    <div>
+                      <span className="text-[#EF4444] font-semibold font-[family-name:var(--font-body)]">February 2025:</span>
+                      <span className="text-[#888] font-[family-name:var(--font-body)]"> Market shifts to range-bound.</span>
+                      <p className="text-white font-[family-name:var(--font-body)]">APEX automatically pivots to: Mean reversion, tighter stops, fade-the-extremes entries.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-center text-[#aaa] font-[family-name:var(--font-body)]">
+                  <span className="text-white font-semibold">You didn&apos;t change settings. APEX adapted on its own.</span>
+                  <br />
+                  <span className="text-[#EF4444]">Traditional bots? They keep running the same strategy until they blow your account.</span>
+                </p>
+              </div>
+
+              {/* Multi-Dimensional Analysis */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-[#0a0a0a]">
+                <div className="flex items-center gap-3 mb-6">
+                  <Target className="w-8 h-8 text-[#3B82F6]" />
+                  <h3 className="text-xl font-bold text-white font-[family-name:var(--font-heading)]">3. MULTI-DIMENSIONAL MARKET ANALYSIS</h3>
+                </div>
+
+                <p className="text-[#888] mb-6 font-[family-name:var(--font-body)]">Most bots look at 1-3 indicators on 1 timeframe. <span className="text-white font-semibold">APEX simultaneously processes:</span></p>
+
+                <div className="grid sm:grid-cols-2 gap-3 mb-6">
+                  {[
+                    "14 currency pairs (correlation analysis)",
+                    "6 timeframes per pair (multi-timeframe confluence)",
+                    "Order flow data (where institutions are positioned)",
+                    "Volatility regimes (VIX, ATR, historical ranges)",
+                    "News sentiment scanning (pre-positioning before events)",
+                    "Liquidity mapping (where stop-hunts will occur)",
+                    "Seasonal patterns (monthly/quarterly tendencies)",
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-2 text-[#aaa] font-[family-name:var(--font-body)] text-sm">
+                      <CheckCircle2 className="w-4 h-4 text-[#3B82F6] flex-shrink-0 mt-0.5" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="text-center bg-black border border-[#3B82F6]/30 p-6">
+                  <p className="text-4xl font-bold text-[#3B82F6] font-[family-name:var(--font-heading)]">1,247</p>
+                  <p className="text-[#888] font-[family-name:var(--font-body)]">data points per second</p>
+                  <p className="text-[#666] text-sm mt-2 font-[family-name:var(--font-body)]">Your brain can process maybe 3-5 variables before it gets overwhelmed.</p>
+                  <p className="text-white font-semibold mt-2 font-[family-name:var(--font-body)]">APEX processes 1,247 and makes decisions in milliseconds.</p>
+                </div>
+              </div>
+
+              {/* Predictive Risk Management */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-black">
+                <div className="flex items-center gap-3 mb-6">
+                  <Shield className="w-8 h-8 text-[#EF4444]" />
+                  <h3 className="text-xl font-bold text-white font-[family-name:var(--font-heading)]">4. PREDICTIVE RISK MANAGEMENT</h3>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-[#EF4444] mb-3 font-[family-name:var(--font-body)]">Traditional Bots:</div>
+                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4 text-[#888] font-[family-name:var(--font-body)]">
+                      &quot;Set 2% risk per trade.&quot;
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-[#3B82F6] mb-3 font-[family-name:var(--font-body)]">APEX:</div>
+                    <div className="bg-[#0a0a0a] border border-[#3B82F6]/30 p-4 text-sm font-mono text-[#3B82F6]">
+                      &quot;Current volatility 2.3x normal, correlation breakdown detected across USD pairs, news event in 90 minutes, reduce position sizing to 0.8%, tighten stops by 15%, activate hedge protocol if drawdown exceeds 4% in next 6 hours.&quot;
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-center text-[#aaa] font-[family-name:var(--font-body)]">
+                  <span className="text-white font-semibold">It doesn&apos;t just react to risk. It PREDICTS it.</span>
+                  <br />
+                  <span className="text-[#888]">That&apos;s why APEX users sleep at night while traditional bot users wake up to margin calls.</span>
+                </p>
+              </div>
+
+              {/* Continuous Evolution */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-[#0a0a0a]">
+                <div className="flex items-center gap-3 mb-6">
+                  <TrendingUp className="w-8 h-8 text-[#3B82F6]" />
+                  <h3 className="text-xl font-bold text-white font-[family-name:var(--font-heading)]">5. CONTINUOUS EVOLUTION</h3>
+                </div>
+
+                <div className="space-y-4 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed">
+                  <p>Here&apos;s the insane part:</p>
+                  <p className="text-white font-semibold">Every month, APEX gets smarter.</p>
+                  <p>Not because we update some settings. Because it&apos;s <span className="text-[#3B82F6] font-semibold">learning from 500+ live accounts simultaneously.</span></p>
+                  <p>Every winning trade. Every losing trade. Every edge case. Every volatility spike.</p>
+                  <p className="text-white font-semibold">The collective intelligence of 500 traders flows back into the algorithm.</p>
+                  <p>It&apos;s like having 500 experienced traders constantly teaching the system what works and what doesn&apos;t.</p>
+                </div>
+
+                <div className="mt-6 p-4 border border-[#3B82F6]/30 bg-[#3B82F6]/5 text-center">
+                  <p className="text-white font-semibold font-[family-name:var(--font-body)]">
+                    Traditional bots are static. <span className="text-[#3B82F6]">APEX is EVOLVING.</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* The Uncomfortable Truth */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-black">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-8 font-[family-name:var(--font-heading)] text-center">
+                  THE <span className="text-[#EF4444]">UNCOMFORTABLE TRUTH</span> ABOUT THE NEXT 24 MONTHS
+                </h3>
+
+                <div className="space-y-6 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed text-center max-w-2xl mx-auto">
+                  <p>AI isn&apos;t coming to trading. <span className="text-white font-semibold">It&apos;s already here.</span></p>
+                  <p>And the gap between AI-powered systems and manual/traditional-bot traders is growing <span className="text-[#EF4444] font-semibold">exponentially</span> every single month.</p>
+                  <p className="text-white font-semibold text-lg">Right now, you have a choice:</p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mt-8">
+                  <div className="bg-[#0a0a0a] border border-[#EF4444]/30 p-6">
+                    <div className="text-[#EF4444] font-bold mb-3 font-[family-name:var(--font-heading)]">Option A:</div>
+                    <p className="text-[#888] font-[family-name:var(--font-body)] text-sm">Keep trading manually or with outdated bots. Watch the gap widen. Watch your win rate drop as the market gets more efficient. Wonder why nothing works anymore.</p>
+                  </div>
+                  <div className="bg-[#0a0a0a] border border-[#3B82F6]/30 p-6">
+                    <div className="text-[#3B82F6] font-bold mb-3 font-[family-name:var(--font-heading)]">Option B:</div>
+                    <p className="text-[#888] font-[family-name:var(--font-body)] text-sm">Adopt AI-powered execution NOW while it&apos;s still accessible to retail traders. Before the big institutions buy up all the tech. Before regulations limit retail access. Before the edge disappears.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Internet 1995 Moment */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-[#0a0a0a]">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-8 font-[family-name:var(--font-heading)] text-center">
+                  THIS IS YOUR <span className="text-[#3B82F6]">&quot;INTERNET IN 1995&quot;</span> MOMENT
+                </h3>
+
+                <div className="space-y-6 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed">
+                  <p>In 1995, most people thought the internet was a fad.</p>
+
+                  <div className="space-y-2 pl-4 border-l-2 border-[#333]">
+                    <p className="text-[#888] italic">&quot;Why would I buy things online?&quot;</p>
+                    <p className="text-[#888] italic">&quot;I can just go to the store.&quot;</p>
+                    <p className="text-[#888] italic">&quot;This seems complicated.&quot;</p>
+                  </div>
+
+                  <p>The people who adopted it early? <span className="text-white font-semibold">They built Amazon, Google, Facebook.</span></p>
+                  <p>The people who waited? <span className="text-[#EF4444]">They became customers instead of owners.</span></p>
+                  <p className="text-white font-semibold">AI-powered trading is at that exact inflection point RIGHT NOW.</p>
+                  <p>Early adopters are quietly stacking wins.</p>
+                  <p>Skeptics are still Googling <span className="text-[#888] italic">&quot;best RSI settings&quot;</span> and wondering why they can&apos;t get consistent.</p>
+                </div>
+              </div>
+
+              {/* APEX is Different Category */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-black text-center">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-8 font-[family-name:var(--font-heading)]">
+                  APEX ISN&apos;T JUST <span className="text-[#3B82F6]">BETTER</span> THAN OTHER BOTS.
+                </h3>
+
+                <p className="text-white font-semibold text-lg mb-8 font-[family-name:var(--font-body)]">
+                  It&apos;s a fundamentally different category of technology.
+                </p>
+
+                <p className="text-[#888] mb-6 font-[family-name:var(--font-body)]">Comparing APEX to a traditional EA is like comparing:</p>
+
+                <div className="space-y-2 text-[#aaa] font-[family-name:var(--font-body)]">
+                  <p>A Tesla to a horse and buggy</p>
+                  <p>ChatGPT to a calculator</p>
+                  <p>An iPhone to a rotary phone</p>
+                </div>
+
+                <p className="text-white font-semibold text-lg mt-8 font-[family-name:var(--font-heading)]">
+                  It&apos;s not an upgrade. It&apos;s a <span className="text-[#3B82F6]">paradigm shift.</span>
+                </p>
+              </div>
+
+              {/* The Math */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-[#0a0a0a]">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-8 font-[family-name:var(--font-heading)] text-center">
+                  THE MATH <span className="text-[#3B82F6]">DOESN&apos;T LIE:</span>
+                </h3>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-8">
+                  <div className="bg-black border border-[#EF4444]/30 p-6">
+                    <div className="text-xs uppercase tracking-widest text-[#EF4444] mb-4 font-[family-name:var(--font-body)]">Traditional Bot Performance (2024 avg)</div>
+                    <div className="space-y-2 text-sm font-[family-name:var(--font-body)]">
+                      <div className="flex justify-between"><span className="text-[#888]">Win Rate:</span><span className="text-white">54%</span></div>
+                      <div className="flex justify-between"><span className="text-[#888]">Avg Monthly Return:</span><span className="text-white">3-7%</span></div>
+                      <div className="flex justify-between"><span className="text-[#888]">Max Drawdown:</span><span className="text-[#EF4444]">18-24%</span></div>
+                      <div className="flex justify-between"><span className="text-[#888]">Adaptation:</span><span className="text-white">Manual updates</span></div>
+                    </div>
+                  </div>
+                  <div className="bg-black border border-[#3B82F6]/30 p-6">
+                    <div className="text-xs uppercase tracking-widest text-[#3B82F6] mb-4 font-[family-name:var(--font-body)]">APEX Performance (Verified 2024-2025)</div>
+                    <div className="space-y-2 text-sm font-[family-name:var(--font-body)]">
+                      <div className="flex justify-between"><span className="text-[#888]">Win Rate:</span><span className="text-[#3B82F6] font-semibold">64%</span></div>
+                      <div className="flex justify-between"><span className="text-[#888]">Avg Monthly Return:</span><span className="text-[#3B82F6] font-semibold">12-23%</span></div>
+                      <div className="flex justify-between"><span className="text-[#888]">Max Drawdown:</span><span className="text-[#3B82F6] font-semibold">11.4%</span></div>
+                      <div className="flex justify-between"><span className="text-[#888]">Adaptation:</span><span className="text-[#3B82F6] font-semibold">Real-time autonomous</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-center text-white font-semibold font-[family-name:var(--font-body)]">
+                  That&apos;s not 10% better. That&apos;s <span className="text-[#3B82F6]">2-3X better.</span>
+                </p>
+                <p className="text-center text-[#888] mt-2 font-[family-name:var(--font-body)]">
+                  And the gap is <span className="text-[#EF4444]">widening every month</span> as the AI learns.
+                </p>
+              </div>
+
+              {/* What Really Matters */}
+              <div className="border border-[#1a1a1a] p-8 md:p-12 bg-black">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-8 font-[family-name:var(--font-heading)] text-center">
+                  BUT HERE&apos;S WHAT <span className="text-[#EF4444]">REALLY MATTERS...</span>
+                </h3>
+
+                <div className="space-y-6 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed text-center max-w-2xl mx-auto">
+                  <p>This isn&apos;t about some tech flex.</p>
+                  <p className="text-white font-semibold text-lg">It&apos;s about whether you WIN or LOSE.</p>
+                  <p>Whether you grow your account or blow it.</p>
+                  <p>Whether you&apos;re still struggling 6 months from now... or finally profitable.</p>
+
+                  <div className="space-y-2 text-[#888]">
+                    <p>The market doesn&apos;t care about your effort.</p>
+                    <p>It doesn&apos;t care about your &quot;discipline.&quot;</p>
+                    <p>It doesn&apos;t care about your YouTube education.</p>
+                  </div>
+
+                  <p className="text-white font-semibold">It only cares about execution.</p>
+                  <p>And AI executes better than humans. <span className="text-[#3B82F6] font-semibold">It&apos;s not even close.</span></p>
+                </div>
+
+                <div className="mt-8 p-6 border border-[#3B82F6]/30 bg-[#3B82F6]/5 text-center">
+                  <p className="text-white font-semibold font-[family-name:var(--font-body)] text-lg">So the question is:</p>
+                  <p className="text-[#888] mt-2 font-[family-name:var(--font-body)]">Are you going to keep fighting AI with human emotion?</p>
+                  <p className="text-[#3B82F6] font-semibold mt-2 font-[family-name:var(--font-body)]">Or are you going to USE AI to finally win?</p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1156,42 +1676,48 @@ export default function Home() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-px bg-[#1a1a1a]">
-              <TestimonialCard
-                name="Tyler M."
-                handle="@TylerM_Trades"
-                avatar="TM"
-                quote="I'm a construction worker. I literally don't understand forex. I just turned it on and checked my phone once a day. This is life-changing."
-                startAmount="$2,400"
-                currentAmount="$18,900"
-                duration="7 months"
-              />
-              <TestimonialCard
-                name="Kim C."
-                handle="@CryptoKim"
-                avatar="KC"
-                quote="I was about to quit. Blown 3 accounts. My husband said 'one more time and we're done.' Two months later I showed him the account. He cried."
-                startAmount="$5,000"
-                currentAmount="$47,300"
-                duration="11 months"
-              />
-              <TestimonialCard
-                name="Jordan B."
-                handle="@JordanTheBarber"
-                avatar="JB"
-                quote="Bro I cut hair. That's it. I don't know candlesticks or nothing. Now I'm buying a HOUSE. Not renting. BUYING."
-                startAmount="$800"
-                currentAmount="$9,400"
-                duration="5 months"
-              />
-              <TestimonialCard
-                name="Alex R."
-                handle="@StudentDebtFree"
-                avatar="AR"
-                quote="I'm 24. $87K in student loans. I was working 3 jobs. Now I work ONE because APEX is basically my second income. Paid off $34K in debt."
-                startAmount="$3,200"
-                currentAmount="$31,100"
-                duration="9 months"
-              />
+              {testimonials.map((testimonial, i) => (
+                <TestimonialCard
+                  key={i}
+                  name={testimonial.name}
+                  handle={testimonial.handle}
+                  avatar={testimonial.avatar}
+                  quote={testimonial.quote}
+                  startAmount={testimonial.startAmount}
+                  currentAmount={testimonial.currentAmount}
+                  duration={testimonial.duration}
+                  stars={testimonial.stars}
+                />
+              ))}
+            </div>
+
+            {/* Community Screenshots */}
+            <div className="mt-20">
+              <div className="text-center mb-12">
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-3 font-[family-name:var(--font-heading)]">
+                  From Our <span className="text-[#3B82F6]">Community</span>
+                </h3>
+                <p className="text-[#888] font-[family-name:var(--font-body)]">Real posts from real traders in our private Discord</p>
+              </div>
+
+              {/* Masonry-style stacked grid */}
+              <div className="columns-1 md:columns-2 gap-4 space-y-4">
+                {Array.from({ length: 14 }, (_, i) => i + 1).map((num) => (
+                  <div
+                    key={num}
+                    className="break-inside-avoid mb-4"
+                  >
+                    <div className="relative group overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] hover:border-[#3B82F6]/50 transition-all duration-300">
+                      <img
+                        src={`/community/${num}.png`}
+                        alt={`Community testimonial ${num}`}
+                        className="w-full h-auto"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -1240,7 +1766,7 @@ export default function Home() {
         </section>
 
         {/* ============ PRICING SECTION ============ */}
-        <section className="py-20 px-6 bg-[#050505] gradient-section">
+        <section ref={pricingRef} id="pricing-section" className="py-20 px-6 bg-[#050505] gradient-section">
           <div className="relative max-w-4xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-[family-name:var(--font-heading)]">
@@ -1405,7 +1931,10 @@ export default function Home() {
             </div>
 
             {/* Final CTA */}
-            <button className="btn-primary px-12 py-4 font-semibold text-base mb-8 font-[family-name:var(--font-heading)]">
+            <button
+              onClick={scrollToPricing}
+              className="btn-primary px-12 py-4 font-semibold text-base mb-8 font-[family-name:var(--font-heading)]"
+            >
               Get Instant Access
             </button>
 
@@ -1419,11 +1948,11 @@ export default function Home() {
                 <div className="bg-black border border-[#1a1a1a] p-4">
                   <div className="text-[#666] mb-1 font-[family-name:var(--font-body)]">&quot;What if it doesn&apos;t work?&quot;</div>
                   <div className="text-white font-medium font-[family-name:var(--font-body)]">30-day guarantee. <span className="text-[#3B82F6]">Zero risk.</span></div>
-                </div>
+        </div>
                 <div className="bg-black border border-[#1a1a1a] p-4">
                   <div className="text-[#666] mb-1 font-[family-name:var(--font-body)]">&quot;What if I waste money?&quot;</div>
                   <div className="text-white font-medium font-[family-name:var(--font-body)]">You&apos;ve wasted <span className="text-[#EF4444]">MORE</span> on courses.</div>
-                </div>
+    </div>
                 <div className="bg-black border border-[#1a1a1a] p-4">
                   <div className="text-[#666] mb-1 font-[family-name:var(--font-body)]">&quot;Am I ready?&quot;</div>
                   <div className="text-white font-medium font-[family-name:var(--font-body)]">You&apos;ll <span className="text-[#EF4444]">never</span> feel ready.</div>
@@ -1450,13 +1979,13 @@ export default function Home() {
         </section>
 
         {/* ============ FOOTER ============ */}
-        <footer className="py-12 px-6 bg-black border-t border-[#1a1a1a]">
+        <footer className="py-12 px-6 pb-32 bg-black border-t border-[#1a1a1a]">
           <div className="max-w-5xl mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-8">
               {/* Logo */}
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-black" />
+                <div className="w-10 h-10 flex items-center justify-center">
+                  <img src="/logo.png" alt="APEX Protocol™" width={40} height={40} />
                 </div>
                 <span className="text-lg font-bold text-white font-[family-name:var(--font-heading)]">APEX Protocol™</span>
               </div>
@@ -1477,13 +2006,60 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Copyright */}
-            <div className="text-center text-xs text-[#444] font-[family-name:var(--font-body)]">
-              <p className="mb-2">© {new Date().getFullYear()} APEX Protocol™. All rights reserved.</p>
+            {/* Risk Disclaimers */}
+            <div className="mb-8 p-6 border border-[#1a1a1a] bg-[#0a0a0a] space-y-4 text-xs text-[#666] font-[family-name:var(--font-body)] leading-relaxed">
+              <h4 className="text-[#888] font-semibold text-sm mb-3 font-[family-name:var(--font-heading)]">Important Risk Disclosure</h4>
+
               <p>
-                Trading involves significant risk. Past performance does not guarantee future results.
-                Always trade responsibly and only with capital you can afford to lose.
+                <span className="text-[#888] font-medium">Trading Foreign Exchange (Forex) and Contracts for Difference (CFDs) is highly speculative and carries a high level of risk.</span> It may not be suitable for all investors. The high degree of leverage can work against you as well as for you. Before deciding to trade forex or any other financial instrument, you should carefully consider your investment objectives, level of experience, and risk appetite.
               </p>
+
+              <p>
+                <span className="text-[#888] font-medium">APEX Protocol™ is an automated trading system that executes trades based on algorithmic logic.</span> While the system is designed to operate without emotional bias, it does not eliminate market risk. You could sustain a loss of some or all of your initial investment. Therefore, you should not invest money that you cannot afford to lose.
+              </p>
+
+              <p>
+                <span className="text-[#888] font-medium">Past performance is not indicative of future results.</span> All trading results, testimonials, and performance statistics shown on this website are based on historical data and do not guarantee future profitability. Individual results will vary based on account size, market conditions, leverage used, broker execution, and other factors beyond our control.
+              </p>
+
+              <p>
+                <span className="text-[#888] font-medium">No Financial Advice:</span> The information provided on this website is for educational and informational purposes only and should not be construed as financial, investment, or trading advice. We are not registered financial advisors. You should seek independent financial advice from a professional before making any trading decisions.
+              </p>
+
+              <p>
+                <span className="text-[#888] font-medium">Broker Dependency:</span> APEX Protocol™ requires integration with third-party trading platforms (MT4/MT5). We are not affiliated with any broker and do not control trade execution, spreads, slippage, or order fill quality. Your trading results may be affected by your choice of broker.
+              </p>
+
+              <p>
+                <span className="text-[#888] font-medium">System Performance:</span> While APEX Protocol™ undergoes rigorous testing, software performance can be affected by internet connectivity, server uptime, VPS reliability, and other technical factors. We recommend proper risk management and never risking more than 1-2% of your account per trade.
+              </p>
+
+              <p>
+                <span className="text-[#888] font-medium">Hypothetical Performance:</span> Any hypothetical or simulated performance results have certain inherent limitations. Unlike actual performance records, simulated results do not represent actual trading and may not reflect the impact of brokerage commissions, slippage, or other real-world trading costs.
+              </p>
+
+              <p className="text-[#EF4444] font-semibold">
+                By purchasing APEX Protocol™, you acknowledge that you have read, understood, and accepted all risks associated with forex trading and automated trading systems. You agree to use the software at your own risk.
+              </p>
+            </div>
+
+            {/* Copyright */}
+            <div className="text-center text-xs text-[#444] font-[family-name:var(--font-body)] space-y-2">
+              <p>© {new Date().getFullYear()} APEX Protocol™. All rights reserved.</p>
+              <p className="text-[#333]">
+                This product is not affiliated with, endorsed by, or sponsored by any broker or financial institution.
+                <br />
+                Forex trading carries substantial risk and is not suitable for every investor.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4 mt-4 text-[#555]">
+                <a href="#" className="hover:text-[#888] transition-colors">Privacy Policy</a>
+                <span>•</span>
+                <a href="#" className="hover:text-[#888] transition-colors">Terms of Service</a>
+                <span>•</span>
+                <a href="#" className="hover:text-[#888] transition-colors">Refund Policy</a>
+                <span>•</span>
+                <a href="#" className="hover:text-[#888] transition-colors">Contact</a>
+              </div>
             </div>
         </div>
         </footer>

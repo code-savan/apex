@@ -245,6 +245,7 @@ function PricingCard({
   bonuses,
   isPopular,
   ctaText,
+  packageId,
 }: {
   tier: string;
   price: string;
@@ -254,6 +255,7 @@ function PricingCard({
   bonuses?: { title: string; value: string }[];
   isPopular?: boolean;
   ctaText: string;
+  packageId: "starter" | "elite";
 }) {
   return (
     <div className={`relative bg-[#0a0a0a] border ${isPopular ? "border-[#3B82F6]" : "border-[#1a1a1a]"}`}>
@@ -308,9 +310,12 @@ function PricingCard({
           </div>
         )}
 
-        <button className="w-full py-4 font-semibold text-sm transition-all btn-primary font-[family-name:var(--font-heading)]">
+        <a
+          href={`/checkout?package=${packageId}`}
+          className="block w-full py-4 font-semibold text-sm text-center transition-all btn-primary font-[family-name:var(--font-heading)]"
+        >
           {ctaText}
-        </button>
+        </a>
 
         <div className="text-center mt-4 text-xs text-[#666] font-[family-name:var(--font-body)]">
           30-Day Money-Back Guarantee
@@ -1790,6 +1795,7 @@ export default function Home() {
                   "30-Day Money-Back Guarantee",
                 ]}
                 ctaText="Get Starter Access"
+                packageId="starter"
               />
               <PricingCard
                 tier="Elite Mastery Bundle"
@@ -1815,6 +1821,7 @@ export default function Home() {
                 ]}
                 isPopular
                 ctaText="Get Elite Access"
+                packageId="elite"
               />
             </div>
 

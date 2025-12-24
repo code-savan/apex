@@ -20,7 +20,6 @@ const cryptoOptions: Record<string, { name: string; symbol: string; icon: string
   usdt: { name: "Tether", symbol: "USDT", icon: "₮", color: "#26A17B" },
   sol: { name: "Solana", symbol: "SOL", icon: "◎", color: "#9945FF" },
   ltc: { name: "Litecoin", symbol: "LTC", icon: "Ł", color: "#BFBBBB" },
-  usdc: { name: "USD Coin", symbol: "USDC", icon: "$", color: "#2775CA" },
 };
 
 const packages: Record<string, { name: string; cryptoPrice: number }> = {
@@ -41,8 +40,10 @@ function CryptoPendingContent() {
 
   const [copied, setCopied] = useState(false);
   const [txHash, setTxHash] = useState("");
+  const [firstName, setFirstName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const cryptoAddresses: Record<string, string> = {
     btc: process.env.NEXT_PUBLIC_BTC_ADDRESS || "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
@@ -50,7 +51,6 @@ function CryptoPendingContent() {
     usdt: process.env.NEXT_PUBLIC_USDT_ADDRESS || "0x742d35Cc6634C0532925a3b844Bc9e7595f0aB1c",
     sol: process.env.NEXT_PUBLIC_SOL_ADDRESS || "DYw8jCTfbox65qTdqU7KHsS3HqdQfdfSCpDdLB7QLSCD",
     ltc: process.env.NEXT_PUBLIC_LTC_ADDRESS || "ltc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
-    usdc: process.env.NEXT_PUBLIC_USDC_ADDRESS || "0x742d35Cc6634C0532925a3b844Bc9e7595f0aB1c",
   };
 
   const copyToClipboard = (text: string) => {
@@ -60,6 +60,11 @@ function CryptoPendingContent() {
   };
 
   const handleSubmit = async () => {
+    if (!firstName.trim()) {
+      setError("Please enter your first name");
+      return;
+    }
+
     if (!txHash.trim()) {
       setError("Please enter your transaction hash");
       return;
@@ -69,28 +74,31 @@ function CryptoPendingContent() {
     setError("");
 
     try {
-      // In production, you'd verify the transaction here
-      // For now, we'll simulate verification and send confirmation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Send confirmation email
-      await fetch("/api/send-confirmation", {
+      // Submit transaction for verification
+      const response = await fetch("/api/verify-crypto-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          txHash: txHash.trim(),
+          crypto: cryptoId,
           email: decodeURIComponent(email),
-          firstName: "Trader",
+          firstName: firstName.trim(),
           packageName: selectedPackage.name,
-          amount: selectedPackage.cryptoPrice,
-          paymentMethod: `crypto_${cryptoId}`,
-          txHash,
-          isTest: false,
+          expectedAmount: selectedPackage.cryptoPrice,
+          packageId,
         }),
       });
 
-      router.push(`/checkout/success?package=${packageId}&method=crypto`);
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess(true);
+        // Show success message, don't redirect
+      } else {
+        setError(data.error || "Failed to submit transaction. Please try again.");
+      }
     } catch (err) {
-      setError("Failed to verify transaction. Please contact support.");
+      setError("Failed to submit transaction. Please contact support.");
     } finally {
       setIsSubmitting(false);
     }
@@ -166,44 +174,82 @@ function CryptoPendingContent() {
         <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <span className="w-6 h-6 bg-[#3B82F6] rounded-full flex items-center justify-center text-xs">2</span>
-            Enter your transaction hash
+            Submit Payment Details
           </h2>
 
           <p className="text-sm text-[#888] mb-4">
             After sending, paste your transaction hash below so we can verify your payment.
           </p>
 
-          <input
-            type="text"
-            value={txHash}
-            onChange={(e) => setTxHash(e.target.value)}
-            placeholder="0x... or transaction ID"
-            className="w-full bg-black border border-[#1a1a1a] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-[#3B82F6] transition-colors"
-          />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-[#888] mb-2">First Name *</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="John"
+                className="w-full bg-black border border-[#1a1a1a] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3B82F6] transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-[#888] mb-2">Transaction Hash *</label>
+              <input
+                type="text"
+                value={txHash}
+                onChange={(e) => setTxHash(e.target.value)}
+                placeholder="0x... or transaction ID"
+                className="w-full bg-black border border-[#1a1a1a] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-[#3B82F6] transition-colors"
+              />
+              <p className="text-xs text-[#666] mt-2">
+                Find this in your wallet after sending. Also called TX ID or Transaction ID.
+              </p>
+            </div>
+          </div>
 
           {error && (
-            <p className="text-[#EF4444] text-sm mt-2 flex items-center gap-1">
+            <p className="text-[#EF4444] text-sm mt-4 flex items-center gap-1">
               <AlertCircle className="w-4 h-4" />
               {error}
             </p>
+          )}
+
+          {success && (
+            <div className="bg-[#10B981]/10 border border-[#10B981]/30 rounded-lg p-4 mt-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-[#10B981] flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-[#10B981] font-medium">Transaction Submitted!</p>
+                  <p className="text-xs text-[#888] mt-1">
+                    We're verifying your payment on the blockchain. You'll receive an email confirmation shortly. Check your inbox at: <span className="text-white">{decodeURIComponent(email)}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
         {/* Submit Button */}
         <button
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || success}
           className="w-full bg-white text-black font-semibold py-4 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {isSubmitting ? (
+          {success ? (
+            <>
+              <CheckCircle2 className="w-5 h-5" />
+              Submitted Successfully
+            </>
+          ) : isSubmitting ? (
             <>
               <RefreshCw className="w-5 h-5 animate-spin" />
-              Verifying Transaction...
+              Submitting...
             </>
           ) : (
             <>
               <CheckCircle2 className="w-5 h-5" />
-              Verify Payment
+              Submit for Verification
             </>
           )}
         </button>

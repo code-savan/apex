@@ -20,6 +20,13 @@ import {
   Users,
   TrendingUp,
   Headphones,
+  MessageCircle,
+  Play,
+  Award,
+  BadgeCheck,
+  CreditCard,
+  Verified,
+  RefreshCw,
 } from "lucide-react";
 import { testimonials, LICENSES_TOTAL, LICENSES_SOLD, LICENSES_REMAINING, COUNTDOWN_HOURS } from "./constants";
 import Image from "next/image";
@@ -494,6 +501,17 @@ export default function Home() {
       <ProgressBar />
       <StickyCTABar isVisible={showStickyCTA} />
 
+      {/* WhatsApp Floating Button - UAE Market Loves This */}
+      <a
+        href="https://wa.me/1234567890?text=Hi%2C%20I'm%20interested%20in%20APEX%20Protocol"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] hover:bg-[#20BA5A] rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110"
+        aria-label="Contact us on WhatsApp"
+      >
+        <MessageCircle className="w-7 h-7 text-white" />
+      </a>
+
       {/* Exit Intent Popup */}
       {showExitPopup && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 animate-fade-in">
@@ -587,6 +605,22 @@ export default function Home() {
               Get Instant Access
             </button>
 
+            {/* Trust Badges Row - ABOVE the fold */}
+            <div className="flex flex-wrap justify-center gap-6 mb-8 text-xs">
+              <div className="flex items-center gap-2 px-3 py-2 bg-[#0a0a0a]/50 border border-[#1a1a1a] rounded">
+                <Shield className="w-4 h-4 text-[#10B981]" />
+                <span className="text-[#aaa]">30-Day Money-Back</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-[#0a0a0a]/50 border border-[#1a1a1a] rounded">
+                <Lock className="w-4 h-4 text-[#10B981]" />
+                <span className="text-[#aaa]">Secure Checkout</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-[#0a0a0a]/50 border border-[#1a1a1a] rounded">
+                <BadgeCheck className="w-4 h-4 text-[#10B981]" />
+                <span className="text-[#aaa]">Verified Results</span>
+              </div>
+            </div>
+
             {/* Quick Stats */}
             <div className="flex flex-wrap justify-center gap-8 text-sm font-[family-name:var(--font-body)]">
               <div className="flex items-center gap-2">
@@ -602,11 +636,122 @@ export default function Home() {
                 <span className="text-[#aaa]"><span className="text-white font-bold">24/7</span> Automated</span>
               </div>
             </div>
+
+            {/* Scarcity Counter - Prominent */}
+            {/* <div className="mt-10 inline-flex flex-col items-center gap-2 px-6 py-4 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-lg">
+              <span className="text-[#EF4444] text-sm uppercase tracking-widest font-semibold">Limited Availability</span>
+              <div className="flex items-center gap-2">
+                <span className="text-white text-3xl font-bold">{LICENSES_SOLD}</span>
+                <span className="text-[#666] text-xl">/</span>
+                <span className="text-[#888] text-3xl font-bold">{LICENSES_TOTAL}</span>
+              </div>
+              <span className="text-[#888] text-sm">licenses sold - Only <span className="text-[#EF4444] font-bold">{LICENSES_REMAINING} spots</span> remain</span>
+            </div> */}
           </div>
 
           {/* Scroll Indicator */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
             <ChevronDown className="w-6 h-6 text-[#444] animate-bounce" />
+          </div>
+        </section>
+
+        {/* ============ VIDEO DEMO SECTION ============ */}
+        <section className="py-16 px-6 bg-[#050505]">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#3B82F6]/10 border border-[#3B82F6]/30 rounded-full mb-4">
+                <Play className="w-4 h-4 text-[#3B82F6]" />
+                <span className="text-[#3B82F6] text-sm font-semibold uppercase tracking-wide">See It In Action</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-[family-name:var(--font-heading)]">
+                Watch APEX Trade <span className="text-[#3B82F6]">Live</span>
+              </h2>
+              <p className="text-[#888] max-w-2xl mx-auto">
+                Real bot. Real trades. Real profits. No actors. No bullshit.
+              </p>
+            </div>
+
+            {/* Video Placeholder - Replace with your actual video */}
+            <div className="relative aspect-video bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden group cursor-pointer">
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#3B82F6]/20 to-[#9333EA]/20">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Play className="w-10 h-10 text-black ml-1" />
+                </div>
+              </div>
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 px-3 py-2 bg-black/80 backdrop-blur-sm rounded">
+                  <div className="w-2 h-2 bg-[#EF4444] rounded-full animate-pulse" />
+                  <span className="text-white text-sm font-semibold">Live Demo</span>
+                </div>
+                <div className="px-3 py-2 bg-black/80 backdrop-blur-sm rounded">
+                  <span className="text-white text-sm">2:47</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Add Your Video URL Comment */}
+            {/* Replace the placeholder above with: */}
+            {/* <video src="/your-demo-video.mp4" controls className="w-full rounded-lg" /> */}
+            {/* OR embed YouTube: */}
+            {/* <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" className="w-full aspect-video rounded-lg" /> */}
+
+            {/* Quick Trust Stats Under Video */}
+            <div className="grid grid-cols-3 gap-4 mt-8 text-center">
+              <div className="py-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+                <div className="text-2xl font-bold text-white mb-1">94.2%</div>
+                <div className="text-xs text-[#888] uppercase tracking-wide">Win Rate</div>
+              </div>
+              <div className="py-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+                <div className="text-2xl font-bold text-white mb-1">24/7</div>
+                <div className="text-xs text-[#888] uppercase tracking-wide">Auto Trading</div>
+              </div>
+              <div className="py-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+                <div className="text-2xl font-bold text-white mb-1">400+</div>
+                <div className="text-xs text-[#888] uppercase tracking-wide">Active Users</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Social Proof Ticker - EARLY in the page */}
+        <SocialProofTicker />
+
+        {/* ============ EARLY TESTIMONIALS (Top 3) ============ */}
+        <section className="py-16 px-6 bg-black">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#10B981]/10 border border-[#10B981]/30 rounded-full mb-4">
+                <Users className="w-4 h-4 text-[#10B981]" />
+                <span className="text-[#10B981] text-sm font-semibold uppercase tracking-wide">Real Results</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 font-[family-name:var(--font-heading)]">
+                What <span className="text-[#3B82F6]">Real Traders</span> Are Saying
+              </h2>
+              <p className="text-[#888]">Not paid actors. Not fake screenshots. Real people.</p>
+            </div>
+
+            {/* Top 3 Testimonials Grid */}
+            <div className="grid md:grid-cols-3 gap-6">
+              {testimonials.slice(0, 3).map((testimonial, i) => (
+                <TestimonialCard key={i} {...testimonial} />
+              ))}
+            </div>
+
+            {/* Trust Badge Under Testimonials */}
+            <div className="mt-10 flex flex-wrap justify-center gap-8 text-center">
+              <div className="flex flex-col items-center">
+                <div className="text-3xl font-bold text-white mb-1">400+</div>
+                <div className="text-xs text-[#888] uppercase">Active Traders</div>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="text-3xl font-bold text-white mb-1">$2.4M+</div>
+                <div className="text-xs text-[#888] uppercase">Profits Generated</div>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="text-3xl font-bold text-white mb-1">4.9/5</div>
+                <div className="text-xs text-[#888] uppercase">Average Rating</div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -634,6 +779,17 @@ export default function Home() {
                   <span className="text-[#aaa] font-[family-name:var(--font-body)]">{pain}</span>
                 </div>
               ))}
+            </div>
+
+            {/* CTA Button #2 - After Pain Points */}
+            <div className="text-center mt-12">
+              <button
+                onClick={scrollToPricing}
+                className="btn-primary px-10 py-4 font-semibold text-base mb-4 font-[family-name:var(--font-heading)]"
+              >
+                Show Me The Solution
+              </button>
+              <p className="text-[#666] text-sm">30-day money-back guarantee • No risk</p>
             </div>
           </div>
         </section>
@@ -1152,6 +1308,17 @@ export default function Home() {
               <p className="text-xl text-white font-semibold">
                 Because they&apos;re <span className="text-[#EF4444]">HUMAN.</span>
               </p>
+            </div>
+
+            {/* CTA Button #3 - After Story */}
+            <div className="text-center mt-16">
+              <button
+                onClick={scrollToPricing}
+                className="btn-primary px-10 py-4 font-semibold text-base mb-4 font-[family-name:var(--font-heading)]"
+              >
+                I Want This Too
+              </button>
+              <p className="text-[#666] text-sm">Join 400+ profitable traders • <span className="text-[#EF4444] font-semibold">{LICENSES_REMAINING} spots left</span></p>
             </div>
           </div>
         </section>

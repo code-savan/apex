@@ -67,7 +67,8 @@ export async function POST(request: NextRequest) {
           name: `${firstName} ${lastName}`,
           phone_number: phone || undefined,
         },
-        return_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/checkout/success?package=${packageId}`,
+        return_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/checkout/success?package=${packageId}&session_id={CHECKOUT_SESSION_ID}`,
+        webhook_url: "https://www.apexprotocolsystem.com/api/webhook/dodo",
         metadata: {
           package_id: packageId,
           package_name: selectedPackage.name,

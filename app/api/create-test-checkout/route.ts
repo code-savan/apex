@@ -47,7 +47,8 @@ export async function POST() {
             quantity: 1,
           },
         ],
-        return_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/test-payment/success`,
+        return_url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://www.apexprotocolsystem.com"}/test-payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        webhook_url: "https://www.apexprotocolsystem.com/api/webhook/dodo",
         metadata: {
           type: "test_payment",
           amount: "1",

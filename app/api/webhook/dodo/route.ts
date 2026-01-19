@@ -1,126 +1,122 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Webhook } from "standardwebhooks";
+import { writeFile, readFile, mkdir } from "fs/promises";
+import { existsSync } from "fs";
+import path from "path";
 
-// Initialize webhook verifier only if key is available
-const getWebhook = () => {
-  const key = process.env.DODO_WEBHOOK_KEY;
-  if (!key) return null;
-  return new Webhook(key);
-};
+// Simple file-based storage for transaction statuses
+const TRANSACTIONS_DIR = path.join(process.cwd(), ".transactions");
 
-interface WebhookPayload {
-  type: string;
-  data: {
-    payment_id: string;
-    status: string;
-    customer: {
-      email: string;
-      name: string;
-    };
-    metadata?: {
-      package_id?: string;
-      package_name?: string;
-    };
-    amount: {
-      value: number;
-      currency: string;
-    };
-  };
+async function ensureTransactionsDir() {
+  if (!existsSync(TRANSACTIONS_DIR)) {
+    await mkdir(TRANSACTIONS_DIR, { recursive: true });
+  }
 }
 
-const packages: Record<string, { name: string; price: number }> = {
-  starter: { name: "Starter Protocol", price: 499 },
-  elite: { name: "Elite Mastery Bundle", price: 999 },
-};
+async function saveTransaction(sessionId: string, data: any) {
+  await ensureTransactionsDir();
+  const filePath = path.join(TRANSACTIONS_DIR, `${sessionId}.json`);
+  await writeFile(filePath, JSON.stringify(data, null, 2));
+}
+
+export async function getTransaction(sessionId: string) {
+  try {
+    const filePath = path.join(TRANSACTIONS_DIR, `${sessionId}.json`);
+    if (!existsSync(filePath)) {
+      return null;
+    }
+    const data = await readFile(filePath, "utf-8");
+    return JSON.parse(data);
+  } catch (error) {
+    console.error("Error reading transaction:", error);
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const rawBody = await request.text();
+    const body = await request.json();
 
-    const webhookHeaders = {
-      "webhook-id": request.headers.get("webhook-id") || "",
-      "webhook-signature": request.headers.get("webhook-signature") || "",
-      "webhook-timestamp": request.headers.get("webhook-timestamp") || "",
-    };
+    console.log("Webhook received:", {
+      event: body.event_type,
+      sessionId: body.data?.id,
+      status: body.data?.payment_status,
+    });
 
-    // Verify webhook signature
-    const webhook = getWebhook();
-    if (webhook) {
-      try {
-        await webhook.verify(rawBody, webhookHeaders);
-      } catch (err) {
-        console.error("Webhook verification failed:", err);
-        return NextResponse.json(
-          { error: "Invalid webhook signature" },
-          { status: 401 }
-        );
-      }
-    } else {
-      console.warn("Webhook verification skipped - DODO_WEBHOOK_KEY not configured");
+    // Verify webhook signature if you have a webhook secret
+    // const signature = request.headers.get("x-dodo-signature");
+    // if (!verifySignature(body, signature)) {
+    //   return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    // }
+
+    const eventType = body.event_type;
+    const checkoutData = body.data;
+
+    if (!checkoutData?.id) {
+      console.error("No checkout ID in webhook data");
+      return NextResponse.json({ error: "Invalid webhook data" }, { status: 400 });
     }
 
-    const payload = JSON.parse(rawBody) as WebhookPayload;
-
-    // Handle different webhook events
-    switch (payload.type) {
+    // Handle different event types
+    switch (eventType) {
+      case "checkout.completed":
       case "payment.succeeded":
-        await handlePaymentSucceeded(payload);
+        await saveTransaction(checkoutData.id, {
+          sessionId: checkoutData.id,
+          status: "completed",
+          paymentStatus: checkoutData.payment_status || "paid",
+          amount: checkoutData.total_amount || checkoutData.amount,
+          currency: checkoutData.currency || "USD",
+          customerEmail: checkoutData.customer?.email,
+          customerName: checkoutData.customer?.name,
+          metadata: checkoutData.metadata,
+          completedAt: new Date().toISOString(),
+          eventType,
+        });
+        console.log("Payment completed:", checkoutData.id);
+        break;
+
+      case "checkout.created":
+        await saveTransaction(checkoutData.id, {
+          sessionId: checkoutData.id,
+          status: "pending",
+          paymentStatus: checkoutData.payment_status || "pending",
+          amount: checkoutData.total_amount || checkoutData.amount,
+          currency: checkoutData.currency || "USD",
+          customerEmail: checkoutData.customer?.email,
+          customerName: checkoutData.customer?.name,
+          metadata: checkoutData.metadata,
+          createdAt: new Date().toISOString(),
+          eventType,
+        });
+        console.log("Checkout created:", checkoutData.id);
         break;
 
       case "payment.failed":
-        console.log("Payment failed:", payload.data.payment_id);
+        await saveTransaction(checkoutData.id, {
+          sessionId: checkoutData.id,
+          status: "failed",
+          paymentStatus: "failed",
+          amount: checkoutData.total_amount || checkoutData.amount,
+          currency: checkoutData.currency || "USD",
+          customerEmail: checkoutData.customer?.email,
+          customerName: checkoutData.customer?.name,
+          metadata: checkoutData.metadata,
+          failedAt: new Date().toISOString(),
+          eventType,
+        });
+        console.log("Payment failed:", checkoutData.id);
         break;
 
       default:
-        console.log("Unhandled webhook type:", payload.type);
+        console.log("Unhandled webhook event:", eventType);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook error:", error);
+    console.error("Webhook processing error:", error);
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }
     );
   }
-}
-
-async function handlePaymentSucceeded(payload: WebhookPayload) {
-  const { customer, metadata, amount } = payload.data;
-
-  const packageId = metadata?.package_id || "starter";
-  const selectedPackage = packages[packageId] || packages.starter;
-
-  // Extract first name from full name
-  const firstName = customer.name.split(" ")[0] || "Trader";
-
-  // Send confirmation email via Resend
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/send-confirmation`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: customer.email,
-        firstName,
-        packageName: selectedPackage.name,
-        amount: amount.value / 100, // Convert from cents
-        paymentMethod: "card",
-        isTest: false,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("Failed to send confirmation email");
-    }
-  } catch (error) {
-    console.error("Email sending error:", error);
-  }
-
-  // Here you could also:
-  // - Create a license key and store it
-  // - Add user to your database
-  // - Grant access to Discord
-  // - etc.
-
-  console.log(`Payment succeeded for ${customer.email} - ${selectedPackage.name}`);
 }

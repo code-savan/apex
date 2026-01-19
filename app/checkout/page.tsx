@@ -16,6 +16,7 @@ import {
   ArrowDown,
   Play,
   Pause,
+  Coins,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -539,7 +540,8 @@ function CheckoutContent() {
             {/* Payment Method */}
             <section className="mb-5">
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-semibold">3</div>
+                <div className="w-8 h-8 rounded-full bg-white/10 flex
+                items-center justify-center text-sm font-semibold">3</div>
                 <h2 className="text-lg font-semibold text-white/80">Payment Method</h2>
               </div>
 
@@ -564,7 +566,7 @@ function CheckoutContent() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Wallet className="w-5 h-5" />
+                    <Coins className="w-5 h-5" />
                     <span className="font-semibold">Crypto</span>
                   </div>
 

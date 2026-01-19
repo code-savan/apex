@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const packages: Record<string, { name: string; price: number; productId: string }> = {
+  test: {
+    name: "Test Product",
+    price: 1,
+    productId: process.env.DODO_TEST_PRODUCT_ID || "prod_test",
+  },
   starter: {
     name: "Starter Protocol",
     price: 499,
@@ -83,15 +88,27 @@ export async function POST(request: NextRequest) {
         }
       });
 
+      // Provide more specific error messages
+      let userMessage = "Payment service error";
+      if (response.status === 401) {
+        userMessage = "Authentication failed - Please check your API key matches the test/live mode";
+      } else if (response.status === 404) {
+        userMessage = "Product not found - Please verify the product ID exists in your Dodo account";
+      } else if (response.status === 400) {
+        userMessage = errorData?.message || "Invalid request - Please check product configuration";
+      }
+
       // Return detailed error for debugging
       return NextResponse.json(
         {
           error: "DodoPayments Error",
-          message: errorData?.message || errorData?.error || response.statusText,
+          message: userMessage,
           details: errorData,
           debugInfo: {
             productId: selectedPackage.productId,
             testMode: process.env.DODO_TEST_MODE === "true",
+            statusCode: response.status,
+            apiUrl: DODO_API_URL,
           }
         },
         { status: response.status }

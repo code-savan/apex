@@ -33,6 +33,131 @@ import Image from "next/image";
 
 // ============ COMPONENTS ============
 
+// Pre-Checkout Email Collection Modal
+function EmailCollectionModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  selectedPackage
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (name: string, email: string) => void;
+  selectedPackage: string;
+}) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!name.trim() || !email.trim()) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError("Please enter a valid email");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Save to Google Sheet
+      await fetch("/api/save-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          package: selectedPackage,
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch(() => console.log("Lead save failed (non-blocking)"));
+
+      // Store in localStorage for prefill
+      localStorage.setItem("apex_lead_name", name);
+      localStorage.setItem("apex_lead_email", email);
+
+      onSubmit(name, email);
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 animate-fade-in">
+      <div className="relative max-w-md w-full bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-8 animate-fade-in-up">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-[#666] hover:text-white transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="text-center mb-6">
+          <div className="text-4xl mb-3">🚀</div>
+          <h3 className="text-2xl font-bold text-white mb-2">Almost There!</h3>
+          <p className="text-[#888] text-sm">
+            Enter your details to continue to checkout for <span className="text-[#3B82F6] font-semibold">{selectedPackage}</span>
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm text-[#888] mb-2">Full Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="John Doe"
+              className="w-full bg-black border border-[#1a1a1a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#3B82F6] transition-colors"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-[#888] mb-2">Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="john@example.com"
+              className="w-full bg-black border border-[#1a1a1a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#3B82F6] transition-colors"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {error && (
+            <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-lg px-4 py-3 text-[#EF4444] text-sm">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full btn-primary py-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "Processing..." : "Continue to Checkout →"}
+          </button>
+
+          <p className="text-[#666] text-xs text-center">
+            🔒 Your information is secure and will never be shared
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // Progress Bar Component
 function ProgressBar() {
   const [progress, setProgress] = useState(0);
@@ -282,9 +407,9 @@ function PricingCard({
             <span className="text-[#666] font-[family-name:var(--font-body)]">USD</span>
           </div>
           <div className="mt-3 flex items-center gap-2 p-2 border border-[#EF4444]/30 bg-[#EF4444]/5">
-            <span className="text-xl">🎄</span>
+            <span className="text-xl">🎊</span>
             <div className="text-xs font-[family-name:var(--font-body)]">
-              <span className="text-[#888]">Christmas Special: </span>
+              <span className="text-[#888]">New Year Special: </span>
               <span className="text-[#3B82F6] font-medium">{cryptoPrice}</span>
               <span className="text-[#888]"> with crypto </span>
               <span className="text-[#EF4444] font-semibold">(save {cryptoSavings})</span>
@@ -443,8 +568,8 @@ function StickyCTABar({ isVisible }: { isVisible: boolean }) {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
             <div className="hidden sm:flex items-center gap-2 text-sm font-[family-name:var(--font-body)]">
-              <span className="text-xl">🎄</span>
-              <span className="text-[#EF4444] font-semibold">Christmas Crypto Bonus Active</span>
+              <span className="text-xl">🎊</span>
+              <span className="text-[#EF4444] font-semibold">New Year Crypto Bonus Active</span>
             </div>
             <div className="flex items-center gap-2 text-sm font-[family-name:var(--font-body)]">
               <span className="text-[#666]">Only </span>
@@ -469,7 +594,23 @@ function StickyCTABar({ isVisible }: { isVisible: boolean }) {
 export default function Home() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const [showExitPopup, setShowExitPopup] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [selectedPackageForModal, setSelectedPackageForModal] = useState("");
   const pricingRef = useRef<HTMLDivElement>(null);
+
+  // Function to handle CTA button clicks - show email modal first
+  const handleCTAClick = (packageName: string) => {
+    setSelectedPackageForModal(packageName);
+    setShowEmailModal(true);
+  };
+
+  // Function to handle email modal submission
+  const handleEmailSubmit = (name: string, email: string) => {
+    setShowEmailModal(false);
+    // Redirect to checkout with prefilled data
+    const packageId = selectedPackageForModal.toLowerCase().includes("elite") ? "elite" : "starter";
+    window.location.href = `/checkout?package=${packageId}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
+  };
 
   // Handle scroll for sticky CTA - show after pricing section
   useEffect(() => {
@@ -501,6 +642,14 @@ export default function Home() {
       <ProgressBar />
       <StickyCTABar isVisible={showStickyCTA} />
 
+      {/* Email Collection Modal */}
+      <EmailCollectionModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onSubmit={handleEmailSubmit}
+        selectedPackage={selectedPackageForModal}
+      />
+
       {/* WhatsApp Floating Button - UAE Market Loves This */}
       <a
         href="https://wa.me/1234567890?text=Hi%2C%20I'm%20interested%20in%20APEX%20Protocol"
@@ -531,7 +680,7 @@ export default function Home() {
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={() => { setShowExitPopup(false); scrollToPricing(); }}
+                  onClick={() => { setShowExitPopup(false); handleCTAClick("APEX Protocol Starter"); }}
                   className="w-full btn-primary py-4 font-semibold font-[family-name:var(--font-heading)]"
                 >
                   Get Instant Access
@@ -542,7 +691,7 @@ export default function Home() {
                 >
                   No thanks, I&apos;ll keep trading manually
                 </button>
-        </div>
+              </div>
             </div>
           </div>
         </div>
@@ -599,7 +748,7 @@ export default function Home() {
 
             {/* CTA Button */}
             <button
-              onClick={scrollToPricing}
+              onClick={() => handleCTAClick("APEX Protocol Starter")}
               className="btn-primary px-10 py-4 font-semibold text-base mb-8 font-[family-name:var(--font-heading)]"
             >
               Get Instant Access
@@ -655,48 +804,55 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ============ VIDEO DEMO SECTION ============ */}
+        {/* ============ VIDEO TESTIMONIAL SECTION ============ */}
         <section className="py-16 px-6 bg-[#050505]">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#3B82F6]/10 border border-[#3B82F6]/30 rounded-full mb-4">
                 <Play className="w-4 h-4 text-[#3B82F6]" />
-                <span className="text-[#3B82F6] text-sm font-semibold uppercase tracking-wide">See It In Action</span>
+                <span className="text-[#3B82F6] text-sm font-semibold uppercase tracking-wide">Real User Review</span>
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-[family-name:var(--font-heading)]">
-                Watch APEX Trade <span className="text-[#3B82F6]">Live</span>
+                Hear From <span className="text-[#3B82F6]">Real Traders</span>
               </h2>
               <p className="text-[#888] max-w-2xl mx-auto">
-                Real bot. Real trades. Real profits. No actors. No bullshit.
+                No scripts. No actors. Just honest feedback from someone who&apos;s actually using APEX.
               </p>
             </div>
 
-            {/* Video Placeholder - Replace with your actual video */}
-            <div className="relative aspect-video bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden group cursor-pointer">
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#3B82F6]/20 to-[#9333EA]/20">
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Play className="w-10 h-10 text-black ml-1" />
+            {/* Mobile-Dimension Video - Upload your testimonial video */}
+            <div className="max-w-sm mx-auto">
+              <div className="relative bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl" style={{ aspectRatio: '9/16' }}>
+                {/* Video Element - Replace with your actual video */}
+                <video
+                  className="w-full h-full object-cover"
+                  controls
+                  poster="/testimonial-thumbnail.jpg"
+                >
+                  <source src="/testimonial-video.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+
+                {/* Overlay for before play */}
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#3B82F6]/20 to-[#9333EA]/20 pointer-events-none opacity-0 hover:opacity-100 transition-opacity">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                    <Play className="w-8 h-8 text-black ml-1" />
+                  </div>
                 </div>
               </div>
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                <div className="flex items-center gap-2 px-3 py-2 bg-black/80 backdrop-blur-sm rounded">
-                  <div className="w-2 h-2 bg-[#EF4444] rounded-full animate-pulse" />
-                  <span className="text-white text-sm font-semibold">Live Demo</span>
-                </div>
-                <div className="px-3 py-2 bg-black/80 backdrop-blur-sm rounded">
-                  <span className="text-white text-sm">2:47</span>
-                </div>
-              </div>
+
+              {/* Upload Instructions Comment */}
+              {/*
+                TO ADD YOUR VIDEO:
+                1. Record mobile testimonial video (9:16 aspect ratio)
+                2. Save as /public/testimonial-video.mp4
+                3. (Optional) Create thumbnail: /public/testimonial-thumbnail.jpg
+                4. Video will appear above
+              */}
             </div>
 
-            {/* Add Your Video URL Comment */}
-            {/* Replace the placeholder above with: */}
-            {/* <video src="/your-demo-video.mp4" controls className="w-full rounded-lg" /> */}
-            {/* OR embed YouTube: */}
-            {/* <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" className="w-full aspect-video rounded-lg" /> */}
-
-            {/* Quick Trust Stats Under Video */}
-            <div className="grid grid-cols-3 gap-4 mt-8 text-center">
+            {/* Trust Stats Under Video */}
+            <div className="grid grid-cols-3 gap-4 mt-8 text-center max-w-lg mx-auto">
               <div className="py-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
                 <div className="text-2xl font-bold text-white mb-1">94.2%</div>
                 <div className="text-xs text-[#888] uppercase tracking-wide">Win Rate</div>
@@ -784,7 +940,7 @@ export default function Home() {
             {/* CTA Button #2 - After Pain Points */}
             <div className="text-center mt-12">
               <button
-                onClick={scrollToPricing}
+                onClick={() => handleCTAClick("APEX Protocol Starter")}
                 className="btn-primary px-10 py-4 font-semibold text-base mb-4 font-[family-name:var(--font-heading)]"
               >
                 Show Me The Solution
@@ -1313,7 +1469,7 @@ export default function Home() {
             {/* CTA Button #3 - After Story */}
             <div className="text-center mt-16">
               <button
-                onClick={scrollToPricing}
+                onClick={() => handleCTAClick("APEX Protocol Elite")}
                 className="btn-primary px-10 py-4 font-semibold text-base mb-4 font-[family-name:var(--font-heading)]"
               >
                 I Want This Too

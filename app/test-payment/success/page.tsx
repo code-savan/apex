@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, ArrowRight, Clock, XCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -17,7 +17,7 @@ interface TransactionData {
   createdAt?: string;
 }
 
-export default function TestPaymentSuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
 
@@ -246,5 +246,17 @@ export default function TestPaymentSuccessPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TestPaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
   );
 }

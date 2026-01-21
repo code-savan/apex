@@ -22,16 +22,70 @@ import {
   Headphones,
   MessageCircle,
   Play,
+  Pause,
   Award,
   BadgeCheck,
   CreditCard,
   Verified,
   RefreshCw,
 } from "lucide-react";
-import { testimonials, LICENSES_TOTAL, LICENSES_SOLD, LICENSES_REMAINING, COUNTDOWN_HOURS } from "./constants";
+import { testimonials, LICENSES_TOTAL, LICENSES_SOLD, LICENSES_REMAINING, COUNTDOWN_DAYS } from "./constants";
 import Image from "next/image";
 
 // ============ COMPONENTS ============
+
+// Video Testimonial Component with Custom Controls
+function VideoTestimonial({ videoSrc, thumbnail, index }: { videoSrc: string; thumbnail: string; index: number }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  return (
+    <div className="relative bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl group" style={{ aspectRatio: '9/16' }}>
+      <video
+        ref={videoRef}
+        className="w-full h-full object-cover"
+        poster={thumbnail}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onClick={togglePlay}
+      >
+        <source src={videoSrc} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+
+      {/* Play/Pause Button */}
+      <button
+        onClick={togglePlay}
+        className="absolute inset-0 flex items-center justify-center transition-opacity cursor-pointer z-10"
+        style={{ opacity: isPlaying ? 0 : 1 }}
+      >
+        <div className="w-16 h-16 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110 group-hover:scale-110">
+          {isPlaying ? (
+            <Pause className="w-8 h-8 text-white fill-white" />
+          ) : (
+            <Play className="w-8 h-8 text-white fill-white ml-1" />
+          )}
+        </div>
+      </button>
+
+      {/* Hover overlay for playing state */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none transition-opacity ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}
+      />
+    </div>
+  );
+}
 
 // Pre-Checkout Email Collection Modal
 function EmailCollectionModal({
@@ -408,13 +462,12 @@ function PricingCard({
             <span className="text-4xl font-bold text-white font-[family-name:var(--font-heading)]">{price}</span>
             <span className="text-[#666] font-[family-name:var(--font-body)]">USD</span>
           </div>
-          <div className="mt-3 flex items-center gap-2 p-2 border border-[#EF4444]/30 bg-[#EF4444]/5">
-            <span className="text-xl">🎊</span>
+          <div className="mt-3 flex items-center gap-2 p-2 border border-[#10B981]/30 bg-[#10B981]/5">
             <div className="text-xs font-[family-name:var(--font-body)]">
-              <span className="text-[#888]">New Year Special: </span>
-              <span className="text-[#3B82F6] font-medium">{cryptoPrice}</span>
-              <span className="text-[#888]"> with crypto </span>
-              <span className="text-[#EF4444] font-semibold">(save {cryptoSavings})</span>
+              <span className="text-[#888]">Crypto Price: </span>
+              <span className="text-[#10B981] font-medium">{cryptoPrice}</span>
+              <span className="text-[#888]"> </span>
+              <span className="text-[#10B981] font-semibold">(save {cryptoSavings})</span>
             </div>
           </div>
         </div>
@@ -486,12 +539,13 @@ function SocialProofTicker() {
   );
 }
 
-// Countdown Timer Component (6 hours)
-function CountdownTimer() {
+// Countdown Timer Component (5 days)
+function CountdownTimer({ compact = false }: { compact?: boolean }) {
   const [timeLeft, setTimeLeft] = useState(() => {
-    // Initialize with COUNTDOWN_HOURS
+    // Initialize with COUNTDOWN_DAYS
     return {
-      hours: COUNTDOWN_HOURS,
+      days: COUNTDOWN_DAYS,
+      hours: 0,
       minutes: 0,
       seconds: 0,
     };
@@ -506,11 +560,11 @@ function CountdownTimer() {
       endTime = parseInt(savedEndTime);
       // If the saved time has passed, reset it
       if (endTime < Date.now()) {
-        endTime = Date.now() + (COUNTDOWN_HOURS * 60 * 60 * 1000);
+        endTime = Date.now() + (COUNTDOWN_DAYS * 24 * 60 * 60 * 1000);
         localStorage.setItem('apex_countdown_end', endTime.toString());
       }
     } else {
-      endTime = Date.now() + (COUNTDOWN_HOURS * 60 * 60 * 1000);
+      endTime = Date.now() + (COUNTDOWN_DAYS * 24 * 60 * 60 * 1000);
       localStorage.setItem('apex_countdown_end', endTime.toString());
     }
 
@@ -520,22 +574,54 @@ function CountdownTimer() {
 
       if (diff <= 0) {
         // Reset the timer
-        endTime = Date.now() + (COUNTDOWN_HOURS * 60 * 60 * 1000);
+        endTime = Date.now() + (COUNTDOWN_DAYS * 24 * 60 * 60 * 1000);
         localStorage.setItem('apex_countdown_end', endTime.toString());
-        setTimeLeft({ hours: COUNTDOWN_HOURS, minutes: 0, seconds: 0 });
+        setTimeLeft({ days: COUNTDOWN_DAYS, hours: 0, minutes: 0, seconds: 0 });
       } else {
-        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        setTimeLeft({ hours, minutes, seconds });
+        setTimeLeft({ days, hours, minutes, seconds });
       }
     }, 1000);
 
     return () => clearInterval(timer);
   }, []);
 
+  if (compact) {
+    return (
+      <div className="flex items-center gap-1 text-xs font-mono">
+        <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
+          <span className="text-white font-bold">{String(timeLeft.days).padStart(2, "0")}</span>
+          <span className="text-[#666]">d</span>
+        </div>
+        <span className="text-[#444]">:</span>
+        <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
+          <span className="text-white font-bold">{String(timeLeft.hours).padStart(2, "0")}</span>
+          <span className="text-[#666]">h</span>
+        </div>
+        <span className="text-[#444]">:</span>
+        <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
+          <span className="text-white font-bold">{String(timeLeft.minutes).padStart(2, "0")}</span>
+          <span className="text-[#666]">m</span>
+        </div>
+        <span className="text-[#444]">:</span>
+        <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
+          <span className="text-white font-bold">{String(timeLeft.seconds).padStart(2, "0")}</span>
+          <span className="text-[#666]">s</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-1 text-sm font-mono">
+      <div className="bg-[#111] border border-[#222] px-2 py-1">
+        <span className="text-white font-bold">{String(timeLeft.days).padStart(2, "0")}</span>
+        <span className="text-[#666]">d</span>
+      </div>
+      <span className="text-[#444]">:</span>
       <div className="bg-[#111] border border-[#222] px-2 py-1">
         <span className="text-white font-bold">{String(timeLeft.hours).padStart(2, "0")}</span>
         <span className="text-[#666]">h</span>
@@ -566,25 +652,25 @@ function scrollToPricing() {
 function StickyCTABar({ isVisible }: { isVisible: boolean }) {
   return (
     <div className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${isVisible ? "translate-y-0" : "translate-y-full"}`}>
-      <div className="bg-black border-t border-[#1a1a1a] px-4 py-4">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
-            <div className="hidden sm:flex items-center gap-2 text-sm font-[family-name:var(--font-body)]">
-              <span className="text-xl">🎊</span>
-              <span className="text-[#EF4444] font-semibold">New Year Crypto Bonus Active</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm font-[family-name:var(--font-body)]">
-              <span className="text-[#666]">Only </span>
-              <span className="text-[#EF4444] font-semibold">{LICENSES_REMAINING} spots</span>
-              <span className="text-[#666]"> left</span>
-            </div>
-            <CountdownTimer />
+      <div className="bg-[#0a0a0a]/95 backdrop-blur-sm border-t border-[#1a1a1a] px-4 py-3">
+        <div className="max-w-2xl mx-auto flex flex-col items-center gap-3">
+          {/* Timer and Info Row */}
+          <div className="flex items-center gap-4 sm:gap-6">
+            {/* <div className="flex items-center gap-2 text-xs sm:text-sm"> */}
+              {/* <div className="w-2 h-2 bg-[#EF4444] rounded-full animate-pulse" /> */}
+              {/* <span className="text-[#888]">
+              <span className="text-white font-semibold">
+              {LICENSES_REMAINING}</span> spots</span> */}
+            {/* </div> */}
+            {/* <div className="h-4 w-px bg-[#333]" /> */}
+            <CountdownTimer compact />
           </div>
+          {/* CTA Button */}
           <button
             onClick={scrollToPricing}
-            className="btn-primary px-8 py-3 font-semibold text-sm font-[family-name:var(--font-heading)]"
+            className="btn-primary px-10 py-2.5 font-semibold text-xs"
           >
-            Claim Your Spot
+            Get Instant Access
           </button>
         </div>
       </div>
@@ -598,7 +684,7 @@ export default function Home() {
   const [showExitPopup, setShowExitPopup] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [selectedPackageForModal, setSelectedPackageForModal] = useState("");
-  const pricingRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<HTMLDivElement>(null);
 
   // Function to handle CTA button clicks - show email modal first
   const handleCTAClick = (packageName: string) => {
@@ -614,12 +700,12 @@ export default function Home() {
     window.location.href = `/checkout?package=${packageId}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
   };
 
-  // Handle scroll for sticky CTA - show after pricing section
+  // Handle scroll for sticky CTA - show after timer section
   useEffect(() => {
     const handleScroll = () => {
-      if (pricingRef.current) {
-        const pricingBottom = pricingRef.current.getBoundingClientRect().bottom;
-        setShowStickyCTA(pricingBottom < 0);
+      if (timerRef.current) {
+        const timerBottom = timerRef.current.getBoundingClientRect().bottom;
+        setShowStickyCTA(timerBottom < 0);
       }
     };
 
@@ -716,11 +802,14 @@ export default function Home() {
                 </div>
                 <span className="text-xl font-bold text-white font-[family-name:var(--font-heading)] opacity-80">APEX Protocol™</span>
               </div>
-              <div className="hidden md:flex items-center gap-6">
-                <div className="flex items-center gap-2 text-sm font-[family-name:var(--font-body)]">
-                  <div className="w-2 h-2 bg-[#EF4444] rounded-full animate-pulse-soft" />
-                  <span className="text-[#888]"><span className="text-[#EF4444]">{LICENSES_REMAINING}</span> spots left</span>
-                </div>
+              <div className="flex items-center gap-4 md:gap-6">
+                <a
+                  href="/portal"
+                  className="flex items-center gap-2 px-4 py-2 bg-[#10B981] hover:bg-[#059669] text-white text-sm font-semibold transition-all cursor-pointer"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span className="hidden sm:inline">Client Portal</span>
+                </a>
               </div>
             </div>
           </header>
@@ -806,55 +895,68 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ============ VIDEO TESTIMONIAL SECTION ============ */}
-        <section className="py-16 px-6 bg-[#050505]">
+        {/* ============ TIMER URGENCY SECTION ============ */}
+        <section id="timer-section" ref={timerRef} className="py-10 px-6 bg-[#0a0a0a] border-y border-[#1a1a1a]">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#3B82F6]/10 border border-[#3B82F6]/30 rounded-full mb-4">
-                <Play className="w-4 h-4 text-[#3B82F6]" />
-                <span className="text-[#3B82F6] text-sm font-semibold uppercase tracking-wide">Real User Review</span>
+            <div className="text-center space-y-5">
+              {/* Urgent Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-full">
+                <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
+                <span className="text-[#EF4444] text-sm font-semibold uppercase tracking-wider">Limited Time Offer</span>
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-[family-name:var(--font-heading)]">
-                Hear From <span className="text-[#3B82F6]">Real Traders</span>
-              </h2>
-              <p className="text-[#888] max-w-2xl mx-auto">
-                No scripts. No actors. Just honest feedback from someone who&apos;s actually using APEX.
-              </p>
-            </div>
 
-            {/* Mobile-Dimension Video - Upload your testimonial video */}
-            <div className="max-w-sm mx-auto">
-              <div className="relative bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl" style={{ aspectRatio: '9/16' }}>
-                {/* Video Element - Replace with your actual video */}
-                <video
-                  className="w-full h-full object-cover"
-                  controls
-                  poster="/testimonial-thumbnail.jpg"
-                >
-                  <source src="/testimonial-video.mp4" type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
+              {/* Main Heading */}
+              <h3 className="text-2xl md:text-3xl font-bold text-white font-[family-name:var(--font-heading)]">
+                Special Pricing Ends Soon
+              </h3>
 
-                {/* Overlay for before play */}
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#3B82F6]/20 to-[#9333EA]/20 pointer-events-none opacity-0 hover:opacity-100 transition-opacity">
-                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-                    <Play className="w-8 h-8 text-black ml-1" />
-                  </div>
+              {/* Timer - Large and Centered */}
+              <div className="flex flex-col items-center gap-3 py-4">
+                <span className="text-xs text-[#666] uppercase tracking-widest font-semibold">Offer Expires In</span>
+                <div className="scale-110 md:scale-125">
+                  <CountdownTimer />
                 </div>
               </div>
 
-              {/* Upload Instructions Comment */}
-              {/*
-                TO ADD YOUR VIDEO:
-                1. Record mobile testimonial video (9:16 aspect ratio)
-                2. Save as /public/testimonial-video.mp4
-                3. (Optional) Create thumbnail: /public/testimonial-thumbnail.jpg
-                4. Video will appear above
-              */}
+              {/* Spots Remaining */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#111] border border-[#222] rounded-lg">
+                <div className="w-2 h-2 bg-[#EF4444] rounded-full animate-pulse" />
+                <span className="text-[#888] text-sm">Only <span className="text-white font-bold">{LICENSES_REMAINING}</span> spots remaining</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ============ VIDEO TESTIMONIAL SECTION ============ */}
+        <section className="py-16 px-6 bg-[#050505]">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#3B82F6]/10 border border-[#3B82F6]/30 rounded-full mb-4">
+                <Play className="w-4 h-4 text-[#3B82F6]" />
+                <span className="text-[#3B82F6] text-sm font-semibold uppercase tracking-wide">Real User Reviews</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-[family-name:var(--font-heading)]">
+                Real Results From <span className="text-[#3B82F6]">Real Traders</span>
+              </h2>
+              <p className="text-[#888] max-w-2xl mx-auto">
+                No scripts. No actors. No fake screenshots. Just honest feedback from traders using APEX every day.
+              </p>
             </div>
 
-            {/* Trust Stats Under Video */}
-            <div className="grid grid-cols-3 gap-4 mt-8 text-center max-w-lg mx-auto">
+            {/* Three Video Testimonials */}
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {[2, 1, 3].map((index) => (
+                <VideoTestimonial
+                  key={index}
+                  videoSrc={`/testimonial-${index}.mp4`}
+                  thumbnail={`/testimonial-${index}-thumb.png`}
+                  index={index}
+                />
+              ))}
+            </div>
+
+            {/* Trust Stats Under Videos */}
+            <div className="grid grid-cols-3 gap-4 mt-12 text-center max-w-3xl mx-auto">
               <div className="py-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
                 <div className="text-2xl font-bold text-white mb-1">94.2%</div>
                 <div className="text-xs text-[#888] uppercase tracking-wide">Win Rate</div>
@@ -971,27 +1073,7 @@ export default function Home() {
                 Not my trading career. <span className="text-white font-semibold">My life.</span>
               </p>
               <p>
-                I&apos;m not being dramatic. I&apos;m being honest.
-              </p>
-              <p>
-                I was sitting in my 2004 Honda Civic in a Walmart parking lot at 11 PM, engine running, heat blasting because I couldn&apos;t afford to heat my apartment.
-              </p>
-              <p>
-                My phone was blowing up. Texts I couldn&apos;t answer:
-              </p>
-
-              {/* Text Messages */}
-              <div className="space-y-2 pl-4 border-l-2 border-[#333] my-8">
-                <p className="text-[#888] italic">&quot;Hey man, can you get me back that $500?&quot;</p>
-                <p className="text-[#888] italic">&quot;Dude where&apos;s my money&quot;</p>
-                <p className="text-[#888] italic">&quot;You said 2 weeks ago...&quot;</p>
-              </div>
-
-              <p>
-                I&apos;d borrowed from six different friends. Told them all the same lie: <span className="text-[#888] italic">&quot;I&apos;m onto something. Just need a bit more capital. I&apos;ll pay you back triple.&quot;</span>
-              </p>
-              <p>
-                <span className="text-white font-semibold">I believed it too. That&apos;s the fucked up part.</span>
+                I was sitting in my 2004 Honda Civic in a Walmart parking lot at 11 PM, engine running, because I couldn&apos;t afford to heat my apartment. My phone was blowing up with texts I couldn&apos;t answer.
               </p>
 
               {/* Account Balance */}
@@ -1002,50 +1084,19 @@ export default function Home() {
               </div>
 
               <p>
-                Every dollar from my college fund that my grandma left me when she died. <span className="text-[#EF4444] font-semibold">Gone.</span>
-              </p>
-              <p>
-                But that&apos;s not even the worst part.
+                Every dollar from my college fund gone. But that wasn&apos;t the worst part.
               </p>
 
               {/* The Pregnancy Test */}
               <div className="border-t border-b border-[#1a1a1a] py-8 my-8">
                 <p className="mb-4">
-                  Two weeks earlier, my girlfriend—my fiancée actually—sat me down at our kitchen table. She&apos;d been crying. I could tell because her mascara was smudged.
-                </p>
-                <p className="mb-4">
-                  She slid a piece of paper across the table.
-                </p>
-                <p className="text-white font-semibold text-lg mb-4">
-                  It was a pregnancy test. Positive.
-                </p>
-                <p className="mb-4">
-                  I should&apos;ve been happy. Terrified but happy.
+                  Two weeks earlier, my fiancée showed me a positive pregnancy test. I should&apos;ve been happy.
                 </p>
                 <p>
-                  Instead, I felt nothing but <span className="text-[#EF4444]">shame</span>.
+                  Instead, I felt nothing but <span className="text-[#EF4444]">shame</span>—because I&apos;d just lost our <span className="text-white font-semibold">$4,200</span> baby fund that morning on a revenge trade.
                 </p>
               </div>
 
-              <p>
-                Because I knew—I KNEW—I&apos;d just lost the <span className="text-white font-semibold">$4,200</span> in our &quot;baby fund&quot; that morning on a revenge trade.
-              </p>
-              <p>
-                GBP/USD. I was &quot;sure&quot; it would bounce. Put in 5 lots. My hands were shaking when I clicked. It dropped 140 pips in 30 minutes.
-              </p>
-
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6 my-8 text-center">
-                <p className="text-[#EF4444] font-bold text-xl font-[family-name:var(--font-heading)]">$4,200 gone.</p>
-                <p className="text-[#666] mt-2 text-sm">The money we&apos;d been saving for two years for when we started a family.</p>
-                <p className="text-white mt-2 font-medium">Evaporated in 30 minutes because I &quot;had a feeling.&quot;</p>
-              </div>
-
-              <p>
-                She didn&apos;t know yet. I couldn&apos;t tell her.
-              </p>
-              <p>
-                So I smiled. Hugged her. Told her <span className="text-[#888] italic">&quot;Everything&apos;s going to be okay.&quot;</span>
-              </p>
               <p className="text-white font-semibold">
                 I lied to the woman I loved while she cried happy tears into my shoulder.
               </p>
@@ -1062,28 +1113,8 @@ export default function Home() {
 
             <div className="space-y-6 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed">
               <p>
-                I pulled up my trading journal.
+                I pulled up my trading journal: 387 trades over 11 months. <span className="text-[#EF4444]">43% win rate</span>. Average winners $340, average losers $890.
               </p>
-
-              {/* Trading Stats */}
-              <div className="grid grid-cols-2 gap-4 my-8">
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4 text-center">
-                  <p className="text-3xl font-bold text-white font-[family-name:var(--font-heading)]">387</p>
-                  <p className="text-[#666] text-sm">trades over 11 months</p>
-                </div>
-                <div className="bg-[#0a0a0a] border border-[#EF4444]/30 p-4 text-center">
-                  <p className="text-3xl font-bold text-[#EF4444] font-[family-name:var(--font-heading)]">43%</p>
-                  <p className="text-[#666] text-sm">win rate</p>
-                </div>
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4 text-center">
-                  <p className="text-xl font-bold text-[#3B82F6] font-[family-name:var(--font-heading)]">$340</p>
-                  <p className="text-[#666] text-sm">average winner</p>
-                </div>
-                <div className="bg-[#0a0a0a] border border-[#EF4444]/30 p-4 text-center">
-                  <p className="text-xl font-bold text-[#EF4444] font-[family-name:var(--font-heading)]">$890</p>
-                  <p className="text-[#666] text-sm">average loser</p>
-                </div>
-              </div>
 
               <p>
                 I wasn&apos;t just bad at trading. <span className="text-white font-semibold">I was systematically destroying my life.</span>
@@ -1092,38 +1123,18 @@ export default function Home() {
               <div className="space-y-2 my-8">
                 <p className="text-[#888]">Every rule I set, I broke.</p>
                 <p className="text-[#888]">Every stop loss I placed, I moved.</p>
-                <p className="text-[#888]">Every time I said &quot;just one trade,&quot; I took seven more.</p>
-              </div>
-
-              <p>
-                I pulled up my browser history. It was pathetic:
-              </p>
-
-              {/* Browser History */}
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4 my-8 font-mono text-sm space-y-1">
-                <p className="text-[#666]">&quot;How to recover from trading losses&quot;</p>
-                <p className="text-[#666]">&quot;Forex comeback strategy&quot;</p>
-                <p className="text-[#666]">&quot;Best indicators for reversals&quot;</p>
-                <p className="text-[#666]">&quot;Is forex gambling&quot;</p>
-                <p className="text-[#EF4444]">&quot;How to tell your partner you lost money&quot;</p>
               </div>
 
               <p className="text-white font-semibold">
-                The last search made me put my head on the steering wheel and just... break.
-              </p>
-              <p>
                 I wasn&apos;t a trader. I was a gambling addict who&apos;d convinced himself he was &quot;building a skill.&quot;
               </p>
               <p>
-                I sat there for 3 hours. Thought about just... driving. Somewhere. Anywhere. Disappearing.
-              </p>
-              <p>
-                My phone buzzed.
+                I sat there for 3 hours, thinking about disappearing. Then my phone buzzed.
               </p>
 
               {/* Sarah's Text */}
               <div className="border border-[#3B82F6]/30 bg-[#3B82F6]/5 p-6 my-8 text-center">
-                <p className="text-[#666] text-sm mb-2">Text from Sarah (my fiancée):</p>
+                <p className="text-[#666] text-sm mb-2">Text from Sarah:</p>
                 <p className="text-white text-lg italic">&quot;Are you okay? You&apos;ve been quiet. I love you.&quot;</p>
               </div>
             </div>
@@ -1139,49 +1150,21 @@ export default function Home() {
 
             <div className="space-y-6 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed">
               <p>
-                Not because it was profound. Because it was <span className="text-white font-semibold">simple.</span>
+                She still loved me. Even after everything. <span className="text-white font-semibold text-lg">I decided right there: One more shot. But different.</span>
               </p>
-              <p>
-                She still loved me. Even though I was a failure. Even though I&apos;d destroyed everything.
-              </p>
-              <p className="text-white font-semibold text-lg">
-                I decided right there: One more shot. But different.
-              </p>
-
-              <div className="space-y-2 my-8 text-[#888]">
-                <p>Not another course.</p>
-                <p>Not another &quot;system.&quot;</p>
-                <p>Not another YouTube guru promising 90% win rates.</p>
-              </div>
 
               <p className="text-xl text-white font-semibold text-center py-8 border-t border-b border-[#1a1a1a]">
                 I needed to remove <span className="text-[#EF4444]">MYSELF</span> from the equation.
               </p>
 
-              <h3 className="text-xl font-bold text-white mt-12 mb-6 font-[family-name:var(--font-heading)]">
-                THREE WEEKS OF OBSESSIVE RESEARCH.
-              </h3>
-
               <p>
-                I stopped trading completely. Just researched.
-              </p>
-              <p>
-                I found a paper from MIT about algorithmic trading psychology. The researcher found that <span className="text-white font-semibold">human traders underperform their own rule-based systems by 34% on average.</span>
-              </p>
-              <p>
-                Not because the systems were smarter. Because humans can&apos;t follow their own rules.
+                I spent three weeks researching instead of trading. Found an MIT paper showing <span className="text-white font-semibold">human traders underperform their own rule-based systems by 34% on average</span>—not because the systems were smarter, but because humans can&apos;t follow their own rules.
               </p>
               <p className="text-white font-medium">
                 Our emotions override logic <span className="text-[#EF4444]">every single time</span> when money is involved.
               </p>
               <p>
-                I read about hedge funds. How they don&apos;t have &quot;traders&quot; anymore—they have <span className="text-[#3B82F6]">systems</span>.
-              </p>
-              <p>
-                I learned about Renaissance Technologies. $130 BILLION managed entirely by algorithms. <span className="text-white font-semibold">The most profitable hedge fund in history.</span>
-              </p>
-              <p>
-                Not because they had better &quot;strategies.&quot; <span className="text-white font-semibold">Because they removed human emotion from trading.</span>
+                Renaissance Technologies manages $130 BILLION entirely with algorithms. <span className="text-white font-semibold">The most profitable hedge fund in history—because they removed human emotion from trading.</span>
               </p>
             </div>
           </div>
@@ -1196,10 +1179,7 @@ export default function Home() {
 
             <div className="space-y-6 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed">
               <p>
-                Borrowed more money (I know, stupid).
-              </p>
-              <p>
-                Hired three freelance developers from Eastern Europe. Worked with a quant analyst from Singapore I found on Reddit.
+                Borrowed more money. Hired developers from Eastern Europe and worked with a quant analyst from Singapore I found on Reddit.
               </p>
               <p>
                 I told them: <span className="text-[#888] italic">&quot;I need a system that trades like the rules say. No emotions. No overrides. Just execution.&quot;</span>
@@ -1225,12 +1205,8 @@ export default function Home() {
 
               {/* Demo Test Results */}
               <h3 className="text-xl font-bold text-white mt-12 mb-6 font-[family-name:var(--font-heading)]">
-                JANUARY 2020. DEMO ACCOUNT TEST.
+                JANUARY 2020. 60-DAY DEMO TEST.
               </h3>
-
-              <p>
-                $10,000 virtual dollars. Let it run for 60 days. I didn&apos;t touch it. Didn&apos;t override. Just watched.
-              </p>
 
               <div className="grid grid-cols-2 gap-4 my-8">
                 <div className="bg-[#0a0a0a] border border-[#3B82F6]/30 p-6 text-center">
@@ -1246,30 +1222,65 @@ export default function Home() {
               </div>
 
               <p className="text-white font-semibold text-center">
-                SAME. EXACT. RULES.
+                SAME. EXACT. RULES. The bot just... traded without fear.
               </p>
+            </div>
+          </div>
+        </section>
 
+        {/* ============ THE SCALPER DISCOVERY ============ */}
+        <section className="py-20 px-6 bg-black gradient-section">
+          <div className="relative max-w-2xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-12 font-[family-name:var(--font-heading)] text-center">
+              THEN I DISCOVERED <span className="text-[#F59E0B]">SOMETHING ELSE.</span>
+            </h2>
+
+            <div className="space-y-6 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed">
               <p>
-                The difference? The bot didn&apos;t:
+                APEX was crushing it on swing trades. But I kept noticing something...
+              </p>
+              <p className="text-white font-semibold">
+                Between the big moves, there were <span className="text-[#F59E0B]">hundreds of smaller opportunities</span> happening every single day.
+              </p>
+              <p>
+                5-20 pip moves. Lasting seconds to minutes. Too fast for humans. Too small for the main bot&apos;s strategy.
+              </p>
+              <p>
+                So I built something new: <span className="text-[#F59E0B] font-bold">APEX Scalper.</span>
               </p>
 
-              <div className="space-y-2 my-6">
-                {[
-                  "Exit winners early out of fear",
-                  "Hold losers hoping they'd \"come back\"",
-                  "Revenge trade after losses",
-                  "Overtrade when confident",
-                  "Freeze on perfect setups",
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[#888]">
-                    <XCircle className="w-4 h-4 text-[#EF4444] flex-shrink-0" />
-                    {item}
+              <div className="border border-[#F59E0B]/30 bg-[#F59E0B]/5 p-6 my-8">
+                <p className="text-white font-semibold mb-4">Here&apos;s how they work together:</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-[#0a0a0a] p-4 border border-[#3B82F6]/30">
+                    <p className="text-xs font-bold text-[#3B82F6] mb-2">APEX BOT:</p>
+                    <p className="text-sm text-[#888]">Swing trades. Bigger moves. Fewer trades. Patient.</p>
                   </div>
-                ))}
+                  <div className="bg-[#0a0a0a] p-4 border border-[#F59E0B]/30">
+                    <p className="text-xs font-bold text-[#F59E0B] mb-2">APEX SCALPER:</p>
+                    <p className="text-sm text-[#888]">Speed trades. Smaller moves. Constant action. Lightning-fast.</p>
+                  </div>
+                </div>
               </div>
 
+              <p>
+                They run <span className="text-white font-semibold">simultaneously</span>. Zero conflict. Different timeframes. Different strategies.
+              </p>
               <p className="text-white font-semibold">
-                It just... traded.
+                Together = Maximum market coverage. All opportunities. 24/7.
+              </p>
+
+              <div className="bg-gradient-to-r from-[#10B981]/20 to-[#10B981]/5 p-6 my-8 border border-[#10B981]/30">
+                <p className="text-center text-lg text-white font-semibold mb-2">
+                  Users running BOTH average
+                </p>
+                <p className="text-center text-4xl font-bold text-[#10B981] font-[family-name:var(--font-heading)]">
+                  34% Higher Monthly Returns
+                </p>
+              </div>
+
+              <p className="text-center text-[#888]">
+                But there&apos;s a catch. The Scalper needs serious processing power. That&apos;s why we limit scalping capacity based on your plan.
               </p>
             </div>
           </div>
@@ -1284,33 +1295,15 @@ export default function Home() {
 
             <div className="space-y-6 text-[#aaa] font-[family-name:var(--font-body)] leading-relaxed">
               <p>
-                That&apos;s all I had left after paying back some debt.
-              </p>
-              <p>
-                Sarah didn&apos;t know. She thought I&apos;d quit trading.
-              </p>
-              <p>
-                I turned on the bot and <span className="text-white font-semibold">didn&apos;t look at my phone for 3 days.</span>
-              </p>
-              <p>
-                When I finally checked...
+                Started with $800—all I had left after paying back debt. Turned on the bot and <span className="text-white font-semibold">didn&apos;t look for 3 days.</span>
               </p>
 
               <div className="border border-[#3B82F6]/30 bg-[#3B82F6]/5 p-8 my-8 text-center">
                 <p className="text-5xl font-bold text-[#3B82F6] font-[family-name:var(--font-heading)]">$1,340</p>
               </div>
 
-              <p>
-                I stared at my phone for 10 minutes thinking it was a glitch.
-              </p>
-              <p>
-                Called my broker. <span className="text-[#888] italic">&quot;Is this real?&quot;</span>
-              </p>
-              <p>
-                <span className="text-[#888] italic">&quot;Yes sir, your account balance is $1,340.&quot;</span>
-              </p>
               <p className="text-white font-semibold">
-                I sat on the floor of my bathroom and cried.
+                I called my broker thinking it was a glitch. It wasn&apos;t. I sat on the floor and cried.
               </p>
 
               {/* Eight Months Later */}
@@ -2096,7 +2089,7 @@ export default function Home() {
         </section>
 
         {/* ============ PRICING SECTION ============ */}
-        <section ref={pricingRef} id="pricing-section" className="py-20 px-6 bg-[#050505] gradient-section">
+        <section id="pricing-section" className="py-20 px-6 bg-[#050505] gradient-section">
           <div className="relative max-w-4xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-[family-name:var(--font-heading)]">
@@ -2113,6 +2106,7 @@ export default function Home() {
                 cryptoSavings="$100"
                 features={[
                   "Full APEX Bot (Unlimited MT4/MT5 use)",
+                  "APEX Scalper — $5K-$10K scalping power",
                   "23-Min Setup Video",
                   "Monthly Algorithm Updates (FREE forever)",
                   "Private Discord (400+ traders)",
@@ -2130,6 +2124,7 @@ export default function Home() {
                 cryptoSavings="$200"
                 features={[
                   "Everything in Starter, plus:",
+                  "APEX Scalper — $100K+ scalping power ⚡",
                   "Personal Onboarding Call (30-min)",
                   "Advanced Settings Pack (3 configs)",
                   '"Account Resurrection" Protocol',

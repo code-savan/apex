@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useRef } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -13,9 +13,6 @@ import {
   Wallet,
   AlertCircle,
   Star,
-  ArrowDown,
-  Play,
-  Pause,
   Coins,
 } from "lucide-react";
 import Link from "next/link";
@@ -39,6 +36,7 @@ const packages = {
     cryptoPrice: 399,
     features: [
       "Full APEX Bot (Unlimited MT4/MT5 use)",
+      "APEX Scalper — $5K-$10K scalping power",
       "23-Min Setup Video",
       "Monthly Algorithm Updates (FREE forever)",
       "Private Discord (400+ traders)",
@@ -52,6 +50,7 @@ const packages = {
     cryptoPrice: 799,
     features: [
       "Everything in Starter, plus:",
+      "APEX Scalper — $100K+ scalping power ⚡",
       "Personal Onboarding Call (30-min)",
       "Advanced Settings Pack (3 configs)",
       '"Account Resurrection" Protocol',
@@ -84,73 +83,6 @@ function CheckoutContent() {
   );
   const selectedPackage = packages[selectedPackageId];
 
-  // APEX Scalper Addon State
-  const [scalperAdded, setScalperAdded] = useState(false);
-  const [scalperSectionVisible, setScalperSectionVisible] = useState(false);
-  const scalperPrice = 349;
-  const scalperDiscount = 50;
-
-  // Video player state
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [showPlayButton, setShowPlayButton] = useState(true);
-
-  // Track if scalper section is visible
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setScalperSectionVisible(entry.isIntersecting);
-      },
-      { threshold: 0.3 }
-    );
-
-    const scalperSection = document.getElementById('scalper-section');
-    if (scalperSection) {
-      observer.observe(scalperSection);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  // Video player handlers
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      setCurrentTime(time);
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   // Update URL when package changes
   const handlePackageChange = (pkgId: "starter" | "elite") => {
@@ -177,12 +109,7 @@ function CheckoutContent() {
 
   // Calculate total price
   const getTotalPrice = () => {
-    let basePrice = paymentMethod === "crypto" ? selectedPackage.cryptoPrice : selectedPackage.price;
-    if (scalperAdded) {
-      const scalperFinalPrice = scalperPrice - scalperDiscount;
-      basePrice += scalperFinalPrice;
-    }
-    return basePrice;
+    return paymentMethod === "crypto" ? selectedPackage.cryptoPrice : selectedPackage.price;
   };
 
   // Crypto addresses (these would come from env in production)
@@ -397,7 +324,7 @@ function CheckoutContent() {
       )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-14">
+        <div className="flex flex-col-reverse md:flex-row gap-8 lg:gap-14">
 
           {/* LEFT Column - Form */}
           <div className="w-full flex-1  order-2 lg:order-1">
@@ -683,164 +610,9 @@ function CheckoutContent() {
               )}
             </button>
 
-            <p className="text-center text-xs text-[#555] mt-5 mb-20 font-semibold">
+            <p className="text-center text-xs text-[#555] mt-5 mb-8 font-semibold">
               By completing this purchase, you agree to our Terms of Service
             </p>
-
-
-              {/* APEX Scalper Add-on */}
-              {selectedPackageId !== "test" && (
-              <section id="scalper-section" className="mb-10">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-8 h-8 rounded-full bg-[#F59E0B]/20 flex items-center justify-center overflow-hidden">
-                    <Image src="/logo.png" alt="APEX" width={20} height={20} className="object-contain" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-white/80">Boost Your Results</h2>
-                </div>
-
-                <div className={`rounded-2xl overflow-hidden transition-all bg-[#0a0a0a] border border-[#1a1a1a] flex flex-col items-center justify-center ${
-                  scalperAdded ? "ring-2 ring-[#10B981]/60" : ""
-                }`}>
-                  {/* Video Container - Full Width */}
-                  <div className="relative h-[600px] w-full bg-black flex items-center justify-center group">
-                    <video
-                      ref={videoRef}
-                      className="w-fit h-full object-cover"
-                      poster="/scalper-thumbnail.jpg"
-                      onTimeUpdate={handleTimeUpdate}
-                      onLoadedMetadata={handleLoadedMetadata}
-                      onPlay={() => setIsPlaying(true)}
-                      onPause={() => setIsPlaying(false)}
-                      onClick={togglePlay}
-                    >
-                      <source src="/scalperdemo.mp4" type="video/mp4" />
-                    </video>
-
-                    {/* Play/Pause Button Overlay */}
-                    <button
-                      onClick={togglePlay}
-                      onMouseEnter={() => setShowPlayButton(true)}
-                      className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-                        isPlaying && !showPlayButton ? 'opacity-0' : 'opacity-100'
-                      } group-hover:opacity-100`}
-                    >
-                      <div className="w-16 h-16 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110">
-                        {isPlaying ? (
-                          <Pause className="w-8 h-8 text-white fill-white" />
-                        ) : (
-                          <Play className="w-8 h-8 text-white fill-white ml-1" />
-                        )}
-                      </div>
-                    </button>
-
-                    {/* Video Controls - Bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-white font-mono">{formatTime(currentTime)}</span>
-                        <input
-                          type="range"
-                          min="0"
-                          max={duration || 0}
-                          value={currentTime}
-                          onChange={handleSeek}
-                          className="flex-1 h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0"
-                          style={{
-                            background: `linear-gradient(to right, white ${(currentTime / duration) * 100}%, rgba(255,255,255,0.3) ${(currentTime / duration) * 100}%)`
-                          }}
-                        />
-                        <span className="text-xs text-white font-mono">{formatTime(duration)}</span>
-                      </div>
-                    </div>
-                  </div>
-                       {/* Floating Info Overlay - Bottom Left */}
-                       <div className=" p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent w-full">
-                      <div className="flex items-end justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-[#F59E0B] flex items-center justify-center shrink-0">
-                            <Image src="/logo.png" alt="APEX" width={24} height={24} className="object-contain" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-white">APEX Scalper</h3>
-                            <p className="text-xs text-white/70">Lightning-fast scalping bot</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-white/50 line-through">${scalperPrice}</p>
-                          <p className="font-bold text-lg text-[#F59E0B]">${scalperPrice - scalperDiscount}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                  {/* Features & CTA */}
-                  <div className={`p-6 w-full ${scalperAdded ? "bg-[#10B981]/10" : "bg-[#111]"}`}>
-                    <div className="space-y-4 mb-6">
-                      <p className="text-sm text-[#999]">
-                        You&apos;re getting the APEX Protocol bot (swing trades, position trading).
-                      </p>
-
-                      <p className="text-sm text-white font-medium">
-                        But what about the SMALLER moves happening every few seconds?
-                      </p>
-
-                      <div className="bg-[#0a0a0a] p-4 rounded-xl border border-[#F59E0B]/30">
-                        <p className="text-sm text-white font-semibold mb-3">
-                          🎯 APEX SCALPER catches the quick profits APEX misses.
-                        </p>
-
-                        <div className="space-y-2">
-                          {[
-                            " ✓⃝  Executes lightning-fast scalp trades (seconds to minutes)",
-                            " ✓⃝  Targets 5-20 pip moves during high volatility (compounds FAST)",
-                            " ✓⃝  Runs simultaneously with your main bot (zero conflict)",
-                            " ✓⃝  Most profitable users run BOTH for 24/7 coverage"
-                          ].map((feature, i) => (
-                            <div key={i} className="flex items-start gap-2">
-                              {/* <span className="text-[#F59E0B] ">→</span> */}
-                              <span className="text-xs text-[#999]">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-[#0a0a0a] p-3 rounded-lg border border-[#3B82F6]/30">
-                          <p className="text-xs font-bold text-[#3B82F6] mb-1">MAIN BOT:</p>
-                          <p className="text-xs text-[#666]">Swing trades (bigger moves, fewer trades)</p>
-                        </div>
-                        <div className="bg-[#0a0a0a] p-3 rounded-lg border border-[#F59E0B]/30">
-                          <p className="text-xs font-bold text-[#F59E0B] mb-1">SCALPER:</p>
-                          <p className="text-xs text-[#666]">Speed trades (smaller moves, constant action)</p>
-                        </div>
-                      </div>
-
-                      <div className="bg-gradient-to-r from-[#10B981]/20 to-[#10B981]/5 p-4 rounded-xl border border-[#10B981]/30">
-                        <p className="text-sm text-white font-semibold mb-2">
-                          TOGETHER = Maximum market coverage. All timeframes. All opportunities.
-                        </p>
-                        <p className="text-xs text-[#10B981] font-bold">
-                          Verified Result: Users running both average 34% higher monthly returns.
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setScalperAdded(!scalperAdded)}
-                      className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all cursor-pointer ${
-                        scalperAdded
-                          ? "bg-[#F97316] text-white hover:bg-[#F97316]"
-                          : "bg-gradient-to-r from-[#F59E0B] to-[#F97316] text-black hover:opacity-90"
-                      }`}
-                    >
-                      {scalperAdded ? (
-                        <span>I don&apos;t want Scalper Add-on</span>
-                      ) : (
-                        <span>+ Add to Order — ${scalperPrice - scalperDiscount}</span>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </section>
-            )}
           </div>
 
           {/* RIGHT Column - Order Summary (Sticky) */}
@@ -887,19 +659,6 @@ function CheckoutContent() {
                     <span className="font-bold">${paymentMethod === "crypto" ? selectedPackage.cryptoPrice : selectedPackage.price}</span>
                   </div>
 
-                  {scalperAdded && (
-                    <>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#555] font-medium">APEX Scalper</span>
-                        <span className="font-bold">${scalperPrice - scalperDiscount}</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-[#10B981]">
-                        <span className="font-medium">Bundle Discount</span>
-                        <span className="font-bold">-${scalperDiscount}</span>
-                      </div>
-                    </>
-                  )}
-
                   {paymentMethod === "crypto" && (
                     <div className="flex justify-between text-xs text-[#10B981]">
                       <span className="font-medium">Crypto Discount</span>
@@ -943,24 +702,56 @@ function CheckoutContent() {
         </div>
       </main>
 
-      {/* Fixed Pulsing Addon Button - Shows when scalper section is not visible and not added */}
-      {selectedPackageId !== "test" && !scalperSectionVisible && !scalperAdded && (
-        <div className="fixed -bottom-5  left-[90px] z-50 p-4  pointer-events-none">
-          <div className="max-w-xl mx-auto pointer-events-auto">
-            <button
-              onClick={() => {
-                document.getElementById('scalper-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }}
-              className="w-full py-1.5 px-3 rounded-bl-0 rounded-br-0 rounded-t-xl
-               bg-gradient-to-r from-[#F59E0B] to-[#F97316] text-black font-bold text-[10px] flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(245,158,11,0.3)]  hover:animate-none hover:scale-[1.02] transition-transform cursor-pointer"
-            >
-              {/* <Sparkles className="w-4 h-4" /> */}
-              <span className="animate-pulse">Don&apos;t Miss: APEX Scalper Add-on — Over $100,000 monthly in scalping technology</span>
-              <ArrowDown className="w-4 h-4 animate-bounce mt-1" />
-            </button>
+      {/* Risk Disclaimers */}
+      <footer className="border-t border-[#1a1a1a] mt-12">
+        <div className="max-w-6xl mx-auto px-6 py-10">
+          <div className="p-6 border border-[#1a1a1a] bg-[#0a0a0a] space-y-4 text-xs text-[#666] leading-relaxed">
+            <h4 className="text-[#888] font-semibold text-sm mb-3">Important Risk Disclosure</h4>
+
+            <p>
+              <span className="text-[#888] font-medium">Trading Foreign Exchange (Forex) and Contracts for Difference (CFDs) is highly speculative and carries a high level of risk.</span> It may not be suitable for all investors. The high degree of leverage can work against you as well as for you. Before deciding to trade forex or any other financial instrument, you should carefully consider your investment objectives, level of experience, and risk appetite.
+            </p>
+
+            <p>
+              <span className="text-[#888] font-medium">APEX Protocol™ is an automated trading system that executes trades based on algorithmic logic.</span> While the system is designed to operate without emotional bias, it does not eliminate market risk. You could sustain a loss of some or all of your initial investment. Therefore, you should not invest money that you cannot afford to lose.
+            </p>
+
+            <p>
+              <span className="text-[#888] font-medium">Past performance is not indicative of future results.</span> All trading results, testimonials, and performance statistics shown on this website are based on historical data and do not guarantee future profitability. Individual results will vary based on account size, market conditions, leverage used, broker execution, and other factors beyond our control.
+            </p>
+
+            <p>
+              <span className="text-[#888] font-medium">No Financial Advice:</span> The information provided on this website is for educational and informational purposes only and should not be construed as financial, investment, or trading advice. We are not registered financial advisors. You should seek independent financial advice from a professional before making any trading decisions.
+            </p>
+
+            <p>
+              <span className="text-[#888] font-medium">Broker Dependency:</span> APEX Protocol™ requires integration with third-party trading platforms (MT4/MT5). We are not affiliated with any broker and do not control trade execution, spreads, slippage, or order fill quality. Your trading results may be affected by your choice of broker.
+            </p>
+
+            <p>
+              <span className="text-[#888] font-medium">System Performance:</span> While APEX Protocol™ undergoes rigorous testing, software performance can be affected by internet connectivity, server uptime, VPS reliability, and other technical factors. We recommend proper risk management and never risking more than 1-2% of your account per trade.
+            </p>
+
+            <p>
+              <span className="text-[#888] font-medium">Hypothetical Performance:</span> Any hypothetical or simulated performance results have certain inherent limitations. Unlike actual performance records, simulated results do not represent actual trading and may not reflect the impact of brokerage commissions, slippage, or other real-world trading costs.
+            </p>
+
+            <p className="text-[#EF4444] font-semibold">
+              By purchasing APEX Protocol™, you acknowledge that you have read, understood, and accepted all risks associated with forex trading and automated trading systems. You agree to use the software at your own risk.
+            </p>
+          </div>
+
+          {/* Copyright */}
+          <div className="text-center text-xs text-[#444] space-y-2 mt-6">
+            <p>© {new Date().getFullYear()} APEX Protocol™. All rights reserved.</p>
+            <p className="text-[#333]">
+              This product is not affiliated with, endorsed by, or sponsored by any broker or financial institution.
+              <br />
+              Forex trading carries substantial risk and is not suitable for every investor.
+            </p>
           </div>
         </div>
-      )}
+      </footer>
     </div>
   );
 }

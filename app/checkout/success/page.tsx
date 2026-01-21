@@ -45,7 +45,7 @@ function SuccessContent() {
       // Get stored lead info
       const storedName = localStorage.getItem("apex_lead_name") || "";
       const storedEmail = localStorage.getItem("apex_lead_email") || "";
-      
+
       if (storedEmail) {
         try {
           await fetch("/api/save-customer", {
@@ -67,7 +67,7 @@ function SuccessContent() {
         }
       }
     };
-    
+
     saveCustomer();
 
     // Trigger confetti

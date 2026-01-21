@@ -663,15 +663,42 @@ function StickyCTABar({ isVisible }: { isVisible: boolean }) {
               {LICENSES_REMAINING}</span> spots</span> */}
             {/* </div> */}
             {/* <div className="h-4 w-px bg-[#333]" /> */}
+            <div className="">
             <CountdownTimer compact />
+            </div>
           </div>
           {/* CTA Button */}
           <button
             onClick={scrollToPricing}
-            className="btn-primary px-10 py-2.5 font-semibold text-xs"
+            className="btn-primary px-10 py-2.5 font-semibold text-xs animate-pulse-twice"
           >
             Get Instant Access
           </button>
+          <style jsx global>{`
+            @keyframes pulse-twice {
+              0% {
+                transform: scale(1);
+              }
+              12.5% {
+                transform: scale(1.09);
+              }
+              25% {
+                transform: scale(1);
+              }
+              37.5% {
+                transform: scale(1.09);
+              }
+              50% {
+                transform: scale(1);
+              }
+              100% {
+                transform: scale(1);
+              }
+            }
+            .animate-pulse-twice {
+              animation: pulse-twice 3s cubic-bezier(0.4,0,0.2,1) infinite;
+            }
+          `}</style>
         </div>
       </div>
     </div>

@@ -28,6 +28,7 @@ import {
   CreditCard,
   Verified,
   RefreshCw,
+  Rocket,
 } from "lucide-react";
 import { testimonials, LICENSES_TOTAL, LICENSES_SOLD, LICENSES_REMAINING, COUNTDOWN_DAYS } from "./constants";
 import Image from "next/image";
@@ -157,7 +158,9 @@ function EmailCollectionModal({
         </button>
 
         <div className="text-center mb-6">
-          <div className="text-4xl mb-3">🚀</div>
+          <div className="text-4xl mb-3 text-center">
+          <Rocket className="w-10 h-10 text-white mx-auto" />
+          </div>
           <h3 className="text-2xl font-bold text-white mb-2">Almost There!</h3>
           <p className="text-[#888] text-sm">
             Enter your details to continue to checkout for <span className="text-[#3B82F6] font-semibold">{selectedPackage}</span>

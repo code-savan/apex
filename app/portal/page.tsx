@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, User, Key, Mail, Phone, ArrowLeft, AlertCircle, Shield } from "lucide-react";
+import { Lock, User, Key, Mail, Phone, ArrowLeft, AlertCircle, Shield, Hash } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -139,7 +139,7 @@ export default function ClientPortalPage() {
               <div>
                 <label className="block text-sm text-[#888] mb-2 font-medium">Account Number</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#444]" />
+                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#444]" />
                   <input
                     type="text"
                     value={signInData.accountNumber}

@@ -593,23 +593,23 @@ function CountdownTimer({ compact = false }: { compact?: boolean }) {
     return (
       <div className="flex items-center gap-1 text-xs font-mono">
         <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
-          <span className="text-white font-bold">{String(timeLeft.days).padStart(2, "0")}</span>
-          <span className="text-[#666]">d</span>
+          <span className="text-red-600 font-bold">{String(timeLeft.days).padStart(2, "0")}</span>
+          <span className="text-white">d</span>
         </div>
         <span className="text-[#444]">:</span>
         <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
-          <span className="text-white font-bold">{String(timeLeft.hours).padStart(2, "0")}</span>
-          <span className="text-[#666]">h</span>
+          <span className="text-red-600 font-bold">{String(timeLeft.hours).padStart(2, "0")}</span>
+          <span className="text-white">h</span>
         </div>
         <span className="text-[#444]">:</span>
         <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
-          <span className="text-white font-bold">{String(timeLeft.minutes).padStart(2, "0")}</span>
-          <span className="text-[#666]">m</span>
+          <span className="text-red-600 font-bold">{String(timeLeft.minutes).padStart(2, "0")}</span>
+          <span className="text-white">m</span>
         </div>
         <span className="text-[#444]">:</span>
         <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
-          <span className="text-white font-bold">{String(timeLeft.seconds).padStart(2, "0")}</span>
-          <span className="text-[#666]">s</span>
+          <span className="text-red-600 font-bold">{String(timeLeft.seconds).padStart(2, "0")}</span>
+          <span className="text-white">s</span>
         </div>
       </div>
     );

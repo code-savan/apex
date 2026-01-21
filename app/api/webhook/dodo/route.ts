@@ -3,6 +3,40 @@ import { writeFile, readFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 
+// Helper to save customer to Google Sheets
+async function saveCustomerToSheet(customerData: {
+  name: string;
+  email: string;
+  packageName: string;
+  paymentMethod: string;
+  amount: number;
+  orderId: string;
+}) {
+  const GOOGLE_SHEETS_URL = process.env.GOOGLE_SHEETS_CUSTOMERS_WEBHOOK_URL;
+
+  if (GOOGLE_SHEETS_URL) {
+    try {
+      await fetch(GOOGLE_SHEETS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: customerData.name,
+          email: customerData.email,
+          package: customerData.packageName,
+          paymentMethod: customerData.paymentMethod,
+          amount: customerData.amount,
+          orderId: customerData.orderId,
+          timestamp: new Date().toISOString(),
+          source: "Checkout - Payment Confirmed",
+        }),
+      });
+      console.log("Customer saved to Google Sheets");
+    } catch (sheetError) {
+      console.error("Google Sheets customer save failed:", sheetError);
+    }
+  }
+}
+
 // Simple file-based storage for transaction statuses
 const TRANSACTIONS_DIR = path.join(process.cwd(), ".transactions");
 
@@ -73,6 +107,18 @@ export async function POST(request: NextRequest) {
           eventType,
         });
         console.log("Payment completed:", checkoutData.id);
+
+        // Save customer to Google Sheets
+        if (checkoutData.customer?.email) {
+          await saveCustomerToSheet({
+            name: checkoutData.customer?.name || "Unknown",
+            email: checkoutData.customer.email,
+            packageName: checkoutData.metadata?.packageId || checkoutData.metadata?.package || "Unknown",
+            paymentMethod: "Card",
+            amount: (checkoutData.total_amount || checkoutData.amount) / 100, // Convert cents to dollars
+            orderId: checkoutData.id,
+          });
+        }
         break;
 
       case "checkout.created":

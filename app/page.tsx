@@ -795,7 +795,7 @@ export default function Home() {
 
           {/* Header */}
           <header className="absolute top-0 left-0 right-0 z-20">
-            <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
+            <div className="md:max-w-6xl max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
               <div className="flex items-center gap-1">
                 <div className="w-8 h-8 flex items-center justify-center">
                   <img src="/logo.png" alt="APEX Protocol™" width={30} height={30} />

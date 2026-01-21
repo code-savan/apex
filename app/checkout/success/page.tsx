@@ -40,6 +40,36 @@ function SuccessContent() {
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
+    // Save customer to Google Sheets (backup - in case webhook didn't fire)
+    const saveCustomer = async () => {
+      // Get stored lead info
+      const storedName = localStorage.getItem("apex_lead_name") || "";
+      const storedEmail = localStorage.getItem("apex_lead_email") || "";
+      
+      if (storedEmail) {
+        try {
+          await fetch("/api/save-customer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: storedName,
+              email: storedEmail,
+              package: selectedPackage.name,
+              paymentMethod: paymentMethod === "crypto" ? "Crypto" : "Card",
+              amount: selectedPackage.price,
+              orderId: `WEB-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+            }),
+          });
+          console.log("Customer saved to sheet from success page");
+        } catch (err) {
+          console.log("Customer save failed (non-blocking):", err);
+        }
+      }
+    };
+    
+    saveCustomer();
+
     // Trigger confetti
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
@@ -73,7 +103,7 @@ function SuccessContent() {
     setTimeout(() => setShowContent(true), 500);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedPackage.name, selectedPackage.price, paymentMethod]);
 
   return (
     <div className="min-h-screen bg-black text-white">

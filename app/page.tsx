@@ -739,7 +739,7 @@ export default function Home() {
       />
 
       {/* WhatsApp Floating Button - UAE Market Loves This */}
-      <a
+      {/* <a
         href="https://wa.me/1234567890?text=Hi%2C%20I'm%20interested%20in%20APEX%20Protocol"
         target="_blank"
         rel="noopener noreferrer"
@@ -747,7 +747,7 @@ export default function Home() {
         aria-label="Contact us on WhatsApp"
       >
         <MessageCircle className="w-7 h-7 text-white" />
-      </a>
+      </a> */}
 
       {/* Exit Intent Popup */}
       {showExitPopup && (

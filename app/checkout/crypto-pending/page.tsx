@@ -13,6 +13,7 @@ import {
   Mail,
 } from "lucide-react";
 import Link from "next/link";
+import Footer from "../../components/Footer";
 
 const cryptoOptions: Record<string, { name: string; symbol: string; icon: string; color: string }> = {
   btc: { name: "Bitcoin", symbol: "BTC", icon: "₿", color: "#F7931A" },
@@ -266,6 +267,8 @@ function CryptoPendingContent() {
           </a>
         </div>
       </main>
+
+      <Footer showDisclaimers={false} />
     </div>
   );
 }

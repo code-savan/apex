@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
+import Footer from "../../components/Footer";
 
 const packages = {
   starter: {
@@ -275,6 +276,8 @@ function SuccessContent() {
           </div>
         </div>
       </main>
+
+      <Footer showDisclaimers={false} />
     </div>
   );
 }

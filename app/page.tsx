@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { testimonials, LICENSES_TOTAL, LICENSES_SOLD, LICENSES_REMAINING, COUNTDOWN_DAYS } from "./constants";
 import Image from "next/image";
+import Link from "next/link";
 
 // ============ COMPONENTS ============
 
@@ -2411,13 +2412,13 @@ export default function Home() {
                 Forex trading carries substantial risk and is not suitable for every investor.
               </p>
               <div className="flex flex-wrap justify-center gap-4 mt-4 text-[#555]">
-                <a href="#" className="hover:text-[#888] transition-colors">Privacy Policy</a>
+                <Link href="/privacy" className="hover:text-[#888] transition-colors">Privacy Policy</Link>
                 <span>•</span>
-                <a href="#" className="hover:text-[#888] transition-colors">Terms of Service</a>
+                <Link href="/terms" className="hover:text-[#888] transition-colors">Terms of Service</Link>
                 <span>•</span>
-                <a href="#" className="hover:text-[#888] transition-colors">Refund Policy</a>
+                <Link href="/refund" className="hover:text-[#888] transition-colors">Refund Policy</Link>
                 <span>•</span>
-                <a href="#" className="hover:text-[#888] transition-colors">Contact</a>
+                <Link href="/support" className="hover:text-[#888] transition-colors">Contact</Link>
               </div>
             </div>
         </div>

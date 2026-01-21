@@ -10,7 +10,6 @@ import {
   Copy,
   Check,
   CreditCard,
-  Wallet,
   AlertCircle,
   Star,
   Coins,
@@ -124,16 +123,41 @@ function CheckoutContent() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    if (!formData.firstName) newErrors.firstName = "First name is required";
+    if (!formData.lastName) newErrors.lastName = "Last name is required";
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email address";
     }
 
-    if (!formData.firstName) newErrors.firstName = "First name is required";
-    if (!formData.lastName) newErrors.lastName = "Last name is required";
-
     setErrors(newErrors);
+
+    // Scroll to first error field (with delay for mobile compatibility)
+    if (Object.keys(newErrors).length > 0) {
+      const firstErrorField = Object.keys(newErrors)[0];
+      // Use setTimeout to ensure DOM has updated with error states
+      setTimeout(() => {
+        const element = document.getElementById(`field-${firstErrorField}`);
+        if (element) {
+          // Calculate position manually for better mobile support
+          const elementRect = element.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.pageYOffset;
+          const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
+
+          window.scrollTo({
+            top: middle,
+            behavior: "smooth"
+          });
+
+          // Focus after scroll completes
+          setTimeout(() => {
+            element.focus();
+          }, 500);
+        }
+      }, 100);
+    }
+
     return Object.keys(newErrors).length === 0;
   };
 
@@ -416,8 +440,9 @@ function CheckoutContent() {
               <div className="bg-[#111] rounded-2xl p-6 space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-[#888] mb-2 font-medium">First Name</label>
+                    <label htmlFor="field-firstName" className="block text-sm text-[#888] mb-2 font-medium">First Name</label>
                     <input
+                      id="field-firstName"
                       type="text"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
@@ -427,8 +452,9 @@ function CheckoutContent() {
                     {errors.firstName && <p className="text-[#EF4444] text-xs mt-2">{errors.firstName}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm text-[#888] mb-2 font-medium">Last Name</label>
+                    <label htmlFor="field-lastName" className="block text-sm text-[#888] mb-2 font-medium">Last Name</label>
                     <input
+                      id="field-lastName"
                       type="text"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
@@ -440,8 +466,9 @@ function CheckoutContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm text-[#888] mb-2 font-medium">Email Address</label>
+                  <label htmlFor="field-email" className="block text-sm text-[#888] mb-2 font-medium">Email Address</label>
                   <input
+                    id="field-email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}

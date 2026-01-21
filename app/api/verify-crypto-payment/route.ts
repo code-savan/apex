@@ -5,6 +5,42 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
+// Helper to save customer to Google Sheets
+async function saveCustomerToGoogleSheets(data: {
+  name: string;
+  email: string;
+  packageName: string;
+  paymentMethod: string;
+  amount: number;
+  orderId: string;
+}) {
+  const GOOGLE_SHEETS_URL = process.env.GOOGLE_SHEETS_CUSTOMERS_WEBHOOK_URL;
+
+  if (GOOGLE_SHEETS_URL) {
+    try {
+      await fetch(GOOGLE_SHEETS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          package: data.packageName,
+          paymentMethod: data.paymentMethod,
+          amount: data.amount,
+          orderId: data.orderId,
+          timestamp: new Date().toISOString(),
+          source: "Checkout - Crypto Payment",
+        }),
+      });
+      console.log("Crypto customer saved to Google Sheets");
+    } catch (sheetError) {
+      console.error("Google Sheets crypto customer save failed:", sheetError);
+    }
+  } else {
+    console.log("GOOGLE_SHEETS_CUSTOMERS_WEBHOOK_URL not configured");
+  }
+}
+
 interface VerificationRequest {
   txHash: string;
   crypto: string;
@@ -56,6 +92,16 @@ export async function POST(request: NextRequest) {
       amount: expectedAmount,
       packageId,
       verificationStatus: verificationResult,
+    });
+
+    // Save to Google Sheets
+    await saveCustomerToGoogleSheets({
+      name: firstName,
+      email,
+      packageName,
+      paymentMethod: `Crypto (${crypto.toUpperCase()})`,
+      amount: expectedAmount,
+      orderId,
     });
 
     return NextResponse.json({

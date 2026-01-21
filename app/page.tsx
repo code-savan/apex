@@ -598,22 +598,22 @@ function CountdownTimer({ compact = false }: { compact?: boolean }) {
       <div className="flex items-center gap-1 text-xs font-mono">
         <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
           <span className="text-red-600 font-bold">{String(timeLeft.days).padStart(2, "0")}</span>
-          <span className="text-white">D</span>
+          <span className="text-white italic"> Days</span>
         </div>
         <span className="text-[#444]">:</span>
         <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
           <span className="text-red-600 font-bold">{String(timeLeft.hours).padStart(2, "0")}</span>
-          <span className="text-white">H</span>
+          <span className="text-white italic"> Hours</span>
         </div>
         <span className="text-[#444]">:</span>
         <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
           <span className="text-red-600 font-bold">{String(timeLeft.minutes).padStart(2, "0")}</span>
-          <span className="text-white">M</span>
+          <span className="text-white italic"> Minutes</span>
         </div>
         <span className="text-[#444]">:</span>
         <div className="bg-[#111] border border-[#222] px-1.5 py-0.5">
           <span className="text-red-600 font-bold">{String(timeLeft.seconds).padStart(2, "0")}</span>
-          <span className="text-white">s</span>
+          <span className="text-white italic"> Seconds</span>
         </div>
       </div>
     );

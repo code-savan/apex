@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, package: packageName, timestamp } = await request.json();
+    const { name, email, package: packageName, timestamp, source } = await request.json();
 
     if (!name || !email || !packageName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
             email,
             package: packageName,
             timestamp,
-            source: "Landing Page - Pre-Checkout",
+            source: source || "Landing Page - Unknown Button",
           }),
         });
       } catch (sheetError) {

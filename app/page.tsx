@@ -94,12 +94,14 @@ function EmailCollectionModal({
   isOpen,
   onClose,
   onSubmit,
-  selectedPackage
+  selectedPackage,
+  leadSource
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (name: string, email: string) => void;
   selectedPackage: string;
+  leadSource: string;
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -132,6 +134,7 @@ function EmailCollectionModal({
           email,
           package: selectedPackage,
           timestamp: new Date().toISOString(),
+          source: leadSource,
         }),
       }).catch(() => console.log("Lead save failed (non-blocking)"));
 
@@ -447,7 +450,7 @@ function PricingCard({
   isPopular?: boolean;
   ctaText: string;
   packageId: "starter" | "elite";
-  onCTAClick: (packageName: string) => void;
+  onCTAClick: (packageName: string, source: string) => void;
 }) {
   return (
     <div className={`relative bg-[#0a0a0a] border ${isPopular ? "border-[#3B82F6]" : "border-[#1a1a1a]"}`}>
@@ -502,7 +505,7 @@ function PricingCard({
         )}
 
         <button
-          onClick={() => onCTAClick(tier)}
+          onClick={() => onCTAClick(tier, `Pricing Section - ${tier}`)}
           className="block w-full py-4 font-semibold text-sm text-center transition-all btn-primary font-[family-name:var(--font-heading)] cursor-pointer"
         >
           {ctaText}
@@ -715,11 +718,13 @@ export default function Home() {
   const [showExitPopup, setShowExitPopup] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [selectedPackageForModal, setSelectedPackageForModal] = useState("");
+  const [leadSource, setLeadSource] = useState("");
   const timerRef = useRef<HTMLDivElement>(null);
 
   // Function to handle CTA button clicks - show email modal first
-  const handleCTAClick = (packageName: string) => {
+  const handleCTAClick = (packageName: string, source: string = "Unknown") => {
     setSelectedPackageForModal(packageName);
+    setLeadSource(source);
     setShowEmailModal(true);
   };
 
@@ -767,6 +772,7 @@ export default function Home() {
         onClose={() => setShowEmailModal(false)}
         onSubmit={handleEmailSubmit}
         selectedPackage={selectedPackageForModal}
+        leadSource={leadSource}
       />
 
       {/* WhatsApp Floating Button - UAE Market Loves This */}
@@ -799,7 +805,7 @@ export default function Home() {
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={() => { setShowExitPopup(false); handleCTAClick("APEX Protocol Starter"); }}
+                  onClick={() => { setShowExitPopup(false); handleCTAClick("APEX Protocol Starter", "Exit Intent Popup"); }}
                   className="w-full btn-primary py-4 font-semibold font-[family-name:var(--font-heading)]"
                 >
                   Get Instant Access
@@ -870,7 +876,7 @@ export default function Home() {
 
             {/* CTA Button */}
             <button
-              onClick={() => handleCTAClick("APEX Protocol Starter")}
+              onClick={() => handleCTAClick("APEX Protocol Starter", "Hero Section")}
               className="btn-primary px-10 py-4 font-semibold text-base mb-8 font-[family-name:var(--font-heading)]"
             >
               Get Instant Access
@@ -1075,7 +1081,7 @@ export default function Home() {
             {/* CTA Button #2 - After Pain Points */}
             <div className="text-center mt-12">
               <button
-                onClick={() => handleCTAClick("APEX Protocol Starter")}
+                onClick={() => handleCTAClick("APEX Protocol Starter", "After Pain Points Section")}
                 className="btn-primary px-10 py-4 font-semibold text-base mb-4 font-[family-name:var(--font-heading)]"
               >
                 Show Me The Solution
@@ -1495,7 +1501,7 @@ export default function Home() {
             {/* CTA Button #3 - After Story */}
             <div className="text-center mt-16">
               <button
-                onClick={() => handleCTAClick("APEX Protocol Elite")}
+                onClick={() => handleCTAClick("APEX Protocol Elite", "After Story Section")}
                 className="btn-primary px-10 py-4 font-semibold text-base mb-4 font-[family-name:var(--font-heading)]"
               >
                 I Want This Too

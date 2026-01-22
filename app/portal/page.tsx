@@ -102,7 +102,7 @@ export default function ClientPortalPage() {
             </div>
           </div>
           <h1 className="text-4xl font-black mb-2 bg-gradient-to-r from-white to-[#10B981] bg-clip-text text-transparent">Client Portal</h1>
-          <p className="text-[#888]">Access your APEX trading dashboard</p>
+          <p className="text-[#888]">Access your APEX dashboard</p>
         </div>
 
         {/* Toggle Buttons */}

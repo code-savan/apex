@@ -721,8 +721,73 @@ export default function Home() {
   const [leadSource, setLeadSource] = useState("");
   const timerRef = useRef<HTMLDivElement>(null);
 
-  // Function to handle CTA button clicks - show email modal first
-  const handleCTAClick = (packageName: string, source: string = "Unknown") => {
+  // Quiz data from URL params
+  const [quizData, setQuizData] = useState<{
+    source?: string;
+    score?: string;
+    losses?: string;
+    spent?: string;
+    urgency?: string;
+    email?: string;
+    name?: string;
+  } | null>(null);
+
+  // Read quiz params from URL on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const source = params.get("source");
+
+      if (source === "quiz") {
+        const data = {
+          source,
+          score: params.get("score") || undefined,
+          losses: params.get("losses") || undefined,
+          spent: params.get("spent") || undefined,
+          urgency: params.get("urgency") || undefined,
+          email: params.get("email") || undefined,
+          name: params.get("name") || undefined,
+        };
+        setQuizData(data);
+
+        // Store in localStorage for later use (but don't save to leads sheet yet)
+        // Lead will be saved only when user selects a specific package
+        if (data.name) localStorage.setItem("apex_lead_name", data.name);
+        if (data.email) localStorage.setItem("apex_lead_email", data.email);
+      }
+    }
+  }, []);
+
+  // Function to handle general CTA button clicks (NOT from pricing section)
+  // These should ALWAYS scroll to pricing
+  const handleCTAClick = () => {
+    scrollToPricing();
+  };
+
+  // Function to handle pricing section package selection
+  const handlePackageSelect = (packageName: string, source: string = "Pricing Section") => {
+    const packageId = packageName.toLowerCase().includes("elite") ? "elite" : "starter";
+
+    // If we have quiz data (user came from quiz), save lead and go to checkout
+    if (quizData?.name && quizData?.email) {
+      // Save lead to Google Sheets with package selection
+      fetch("/api/save-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: quizData.name,
+          email: quizData.email,
+          package: packageName,
+          timestamp: new Date().toISOString(),
+          source: `${source} (from quiz - Score: ${quizData.score || "N/A"})`,
+        }),
+      }).catch(() => console.log("Lead save failed (non-blocking)"));
+
+      window.location.href = `/checkout?package=${packageId}&name=${encodeURIComponent(quizData.name)}&email=${encodeURIComponent(quizData.email)}`;
+      return;
+    }
+
+    // For non-quiz users, show email modal to collect lead data
     setSelectedPackageForModal(packageName);
     setLeadSource(source);
     setShowEmailModal(true);
@@ -805,7 +870,7 @@ export default function Home() {
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={() => { setShowExitPopup(false); handleCTAClick("APEX Protocol Starter", "Exit Intent Popup"); }}
+                  onClick={() => { setShowExitPopup(false); handleCTAClick(); }}
                   className="w-full btn-primary py-4 font-semibold font-[family-name:var(--font-heading)]"
                 >
                   Get Instant Access
@@ -876,7 +941,7 @@ export default function Home() {
 
             {/* CTA Button */}
             <button
-              onClick={() => handleCTAClick("APEX Protocol Starter", "Hero Section")}
+              onClick={handleCTAClick}
               className="btn-primary px-10 py-4 font-semibold text-base mb-8 font-[family-name:var(--font-heading)]"
             >
               Get Instant Access
@@ -1081,7 +1146,7 @@ export default function Home() {
             {/* CTA Button #2 - After Pain Points */}
             <div className="text-center mt-12">
               <button
-                onClick={() => handleCTAClick("APEX Protocol Starter", "After Pain Points Section")}
+                onClick={handleCTAClick}
                 className="btn-primary px-10 py-4 font-semibold text-base mb-4 font-[family-name:var(--font-heading)]"
               >
                 Show Me The Solution
@@ -1501,7 +1566,7 @@ export default function Home() {
             {/* CTA Button #3 - After Story */}
             <div className="text-center mt-16">
               <button
-                onClick={() => handleCTAClick("APEX Protocol Elite", "After Story Section")}
+                onClick={handleCTAClick}
                 className="btn-primary px-10 py-4 font-semibold text-base mb-4 font-[family-name:var(--font-heading)]"
               >
                 I Want This Too
@@ -2152,7 +2217,7 @@ export default function Home() {
                 ]}
                 ctaText="Get Starter Access"
                 packageId="starter"
-                onCTAClick={handleCTAClick}
+                onCTAClick={handlePackageSelect}
               />
               <PricingCard
                 tier="Elite Mastery Bundle"
@@ -2180,7 +2245,7 @@ export default function Home() {
                 isPopular
                 ctaText="Get Elite Access"
                 packageId="elite"
-                onCTAClick={handleCTAClick}
+                onCTAClick={handlePackageSelect}
               />
             </div>
 

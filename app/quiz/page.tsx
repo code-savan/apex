@@ -380,7 +380,7 @@ function EmailCaptureScreen({
         {/* Logo */}
         <div className="text-center mb-4 md:mb-6">
           <Link href="/" className="inline-block">
-            <div className="w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 bg-gradient-to-br from-[#0066FF]/20 to-[#FFB800]/20 flex items-center justify-center border border-[#0066FF]/30 shadow-lg shadow-[#0066FF]/10">
+            <div className="w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 flex items-center justify-center border border-white/60 shadow-lg shadow-[#0066FF]/10">
               <Image src="/logo.png" alt="APEX Protocol" width={32} height={32} className="object-contain" />
             </div>
           </Link>
@@ -953,10 +953,13 @@ function ResultsPage({
                     <CheckCircle2 className="w-4 h-4 text-[#0066FF]" />
                     <span className="text-[#888]">Sending to: <span className="text-white">{userData.email}</span></span>
                   </div>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#2a2a2a] text-white text-sm font-medium hover:bg-[#222] transition-all">
+                  <a
+                    href="/api/download-guide"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#2a2a2a] text-white text-sm font-medium hover:bg-[#222] transition-all"
+                  >
                     <Download className="w-4 h-4" />
                     <span>Download Now</span>
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>
@@ -1118,6 +1121,23 @@ export default function QuizPage() {
           source: "quiz_complete",
         }),
       }).catch(() => console.log("Quiz complete API save failed (non-blocking)"));
+
+      // Send quiz completion email with PDF and video links
+      await fetch("/api/send-quiz-completion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userData.email,
+          firstName: userData.name.split(' ')[0],
+          leadScore: finalScore,
+          losses: answers.total_losses?.amount,
+          educationSpent: answers.education_spent?.amount,
+          experienceLevel: answers.experience_level?.label,
+          mainBlocker: answers.main_blocker?.label,
+          goalMotivation: answers.goal_motivation?.label,
+          urgency: answers.urgency_level?.urgency,
+        }),
+      }).catch(() => console.log("Quiz completion email failed (non-blocking)"));
     } catch (error) {
       console.error("Error saving quiz data:", error);
     }

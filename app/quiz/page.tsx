@@ -1655,10 +1655,10 @@ function ResultsPage({
             </p>
 
             <div className="grid md:grid-cols-2 gap-4">
-              <button onClick={() => selectPackageAndScroll("starter")} className="w-full text-white font-bold py-4 transition-all bg-[#0066FF] border-[#0066FF]">
+              <button onClick={() => selectPackageAndScroll("starter")} className="w-full text-white font-bold py-4 transition-all bg-[#0b1b33] border-[#0066FF] border">
                 GET STARTER ($499 / $399)
               </button>
-              <button onClick={() => selectPackageAndScroll("elite")} className="w-full text-white font-bold py-4 transition-all bg-[#FFB800] border-[#FFB800]">
+              <button onClick={() => selectPackageAndScroll("elite")} className="w-full text-white font-bold py-4 transition-all bg-[#2a1a00] border-[#FFB800] border">
                 GET ELITE ($999 / $799)
               </button>
             </div>

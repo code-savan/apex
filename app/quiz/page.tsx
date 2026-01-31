@@ -11,10 +11,10 @@ import {
   CheckCircle2,
   ChevronDown,
   Download,
-  TrendingUp,
   Clock,
-  Zap,
   Shield,
+  Globe,
+  Headphones,
   Gift,
   X,
   Copy,
@@ -1021,16 +1021,17 @@ function ResultsPage({
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <div className="py-8 md:py-12 lg:py-16 px-4 relative">
+    <div className="min-h-screen bg-[#0a0a0a] overflow-x-hidden">
+      <div className="py-3 md:py-12 lg:py-16 px-1 sm:px-4 relative overflow-x-hidden">
         {/* Subtle background */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#1a1a1a]/50 rounded-full blur-[200px]" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[450px] sm:w-[1000px] sm:h-[600px] bg-[#1a1a1a]/50 rounded-full blur-[200px]" />
         </div>
 
-        <div className="w-full max-w-3xl mx-auto relative z-10">
+        <div className="w-full max-w-none md:max-w-3xl mx-auto relative z-10 px-4 md:px-0">
 
-          <div className="text-center mb-10 md:mb-12">
+           {/* Assesment heading */}
+          <div className="text-center mb-6 md:mb-12">
             <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-5 bg-[#111] border border-[#2a2a2a] flex items-center justify-center">
               <Image src="/logo.png" alt="APEX Protocol" width={36} height={36} className="object-contain" />
             </div>
@@ -1044,7 +1045,7 @@ function ResultsPage({
           </div>
 
           {/* Profile Summary Card */}
-          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
             <h2 className="text-white font-semibold text-lg mb-6 flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-[#0066FF]"></div>
               Your Trading Profile
@@ -1102,7 +1103,7 @@ function ResultsPage({
           </div>
 
           {/* Key Insight */}
-          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
             <h2 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-[#0066FF]"></div>
               Key Insight
@@ -1131,7 +1132,8 @@ function ResultsPage({
             </p>
           </div>
 
-          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+          {/* Download Freebie (Quick Win) */}
+          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center shrink-0">
                 <Gift className="w-5 h-5 text-[#FFB800]" />
@@ -1159,7 +1161,8 @@ function ResultsPage({
             </div>
           </div>
 
-          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+          {/* Bridge to Offer (Transition) */}
+          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
             <p className="text-[#666] text-xs uppercase tracking-widest mb-2">Bridge to Offer (Transition)</p>
             <h2 className="text-white font-bold text-xl md:text-2xl mb-4">🎯 INTRODUCING: APEX PROTOCOL</h2>
 
@@ -1186,7 +1189,7 @@ function ResultsPage({
               </div>
             </div>
 
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4 mb-5">
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 md:p-4 mb-5">
               <p className="text-[#888] text-sm leading-relaxed">
                 You&apos;ve already lost <span className="text-white font-semibold">${lossAmount.toLocaleString()}</span>.
                 You&apos;ve already spent <span className="text-white font-semibold">${educationSpent.toLocaleString()}</span> on things that failed.
@@ -1208,7 +1211,8 @@ function ResultsPage({
             </button>
           </div>
 
-          <div ref={checkoutRef} className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+           {/* Checkout section  */}
+          <div ref={checkoutRef} className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
               <div>
                 <p className="text-[#666] text-xs uppercase tracking-widest mb-2">Direct Checkout</p>
@@ -1230,11 +1234,11 @@ function ResultsPage({
               </div>
             </div>
 
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-5 md:p-6">
+            <div className="mt-10">
               <div className="flex items-center justify-between gap-4 mb-5">
                 <div>
                   <p className="text-[#666] text-xs uppercase tracking-widest">Checkout</p>
-                  <h4 className="text-white font-semibold text-lg">Get Instant Access</h4>
+                  <h4 className="text-white font-semibold md:text-lg text-[14px]">Get Instant Access</h4>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[#666]">
                   <Lock className="w-3.5 h-3.5" />
@@ -1473,7 +1477,8 @@ function ResultsPage({
             </div>
           </div>
 
-          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+          {/*Objection Crusher*/}
+          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
             <p className="text-[#666] text-xs uppercase tracking-widest mb-2">Objection Crusher</p>
             <h2 className="text-white font-bold text-xl md:text-2xl mb-4">❓ “Is This Really For Me?”</h2>
 
@@ -1530,7 +1535,8 @@ function ResultsPage({
             </div>
           </div>
 
-          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+          {/* Money Back Guarantee */}
+          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
             <div className="text-center mb-6 w-full">
               <div className="text-white font-bold text-lg w-full h-[2px] border border-white"></div>
               <h2 className="text-white font-bold text-xl md:text-2xl my-3">🛡️ 30-DAY MONEY-BACK GUARANTEE</h2>
@@ -1567,7 +1573,8 @@ function ResultsPage({
             </p>
           </div>
 
-          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+          {/* FAQ */}
+          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
             <div className="text-center mb-6">
               <p className="text-[#666] text-xs uppercase tracking-widest mb-2">FAQ</p>
               <h2 className="text-white font-bold text-xl md:text-2xl">Final Objections</h2>
@@ -1581,7 +1588,8 @@ function ResultsPage({
             </div>
           </div>
 
-          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+          {/* Social Proof */}
+          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
             <p className="text-[#666] text-xs uppercase tracking-widest mb-2">Social Proof</p>
             <h2 className="text-white font-bold text-xl md:text-2xl mb-6">Real Results</h2>
 
@@ -1631,7 +1639,8 @@ function ResultsPage({
             </div>
           </div>
 
-          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+          {/* Final Reminder */}
+          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
             <div className="text-center mb-6">
               <h2 className="text-white font-bold text-xl md:text-2xl">⏰ FINAL REMINDER</h2>
             </div>
@@ -1646,10 +1655,10 @@ function ResultsPage({
             </p>
 
             <div className="grid md:grid-cols-2 gap-4">
-              <button onClick={() => selectPackageAndScroll("starter")} className="w-full bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold py-4 transition-all">
+              <button onClick={() => selectPackageAndScroll("starter")} className="w-full text-white font-bold py-4 transition-all bg-[#0066FF] border-[#0066FF]">
                 GET STARTER ($499 / $399)
               </button>
-              <button onClick={() => selectPackageAndScroll("elite")} className="w-full bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold py-4 transition-all">
+              <button onClick={() => selectPackageAndScroll("elite")} className="w-full text-white font-bold py-4 transition-all bg-[#FFB800] border-[#FFB800]">
                 GET ELITE ($999 / $799)
               </button>
             </div>
@@ -1659,11 +1668,94 @@ function ResultsPage({
             </button>
           </div>
 
+          {/* Remaining Spots */}
           <div className="text-center">
             <p className="text-[#666] text-xs">
               Only <span className="text-[#888]">{LICENSES_REMAINING} spots</span> remaining · Limited availability
             </p>
           </div>
+
+          {/* Footer */}
+          <footer className="mt-10 md:mt-16 py-6 md:py-12 px-3 sm:px-6 pb-16 md:pb-32 bg-black border-t border-[#1a1a1a]">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-8">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 flex items-center justify-center">
+                    <img src="/logo.png" alt="APEX Protocol™" width={40} height={40} />
+                  </div>
+                  <span className="text-lg font-bold text-white font-[family-name:var(--font-heading)]">APEX Protocol™</span>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-6 text-sm">
+                  {[
+                    { icon: Lock, text: "Encrypted Payment" },
+                    { icon: Shield, text: "30-Day Guarantee" },
+                    { icon: Headphones, text: "24/7 Support" },
+                    { icon: Globe, text: "Works Worldwide" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[#666] font-[family-name:var(--font-body)]">
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-8 p-2 md:p-6 border border-[#1a1a1a] bg-[#0a0a0a] space-y-4 text-xs text-[#666] font-[family-name:var(--font-body)] leading-relaxed">
+                <h4 className="text-[#888] font-semibold text-sm mb-3 font-[family-name:var(--font-heading)]">Important Risk Disclosure</h4>
+
+                <p>
+                  <span className="text-[#888] font-medium">Trading Foreign Exchange (Forex) and Contracts for Difference (CFDs) is highly speculative and carries a high level of risk.</span> It may not be suitable for all investors. The high degree of leverage can work against you as well as for you. Before deciding to trade forex or any other financial instrument, you should carefully consider your investment objectives, level of experience, and risk appetite.
+                </p>
+
+                <p>
+                  <span className="text-[#888] font-medium">APEX Protocol™ is an automated trading system that executes trades based on algorithmic logic.</span> While the system is designed to operate without emotional bias, it does not eliminate market risk. You could sustain a loss of some or all of your initial investment. Therefore, you should not invest money that you cannot afford to lose.
+                </p>
+
+                <p>
+                  <span className="text-[#888] font-medium">Past performance is not indicative of future results.</span> All trading results, testimonials, and performance statistics shown on this website are based on historical data and do not guarantee future profitability. Individual results will vary based on account size, market conditions, leverage used, broker execution, and other factors beyond our control.
+                </p>
+
+                <p>
+                  <span className="text-[#888] font-medium">No Financial Advice:</span> The information provided on this website is for educational and informational purposes only and should not be construed as financial, investment, or trading advice. We are not registered financial advisors. You should seek independent financial advice from a professional before making any trading decisions.
+                </p>
+
+                <p>
+                  <span className="text-[#888] font-medium">Broker Dependency:</span> APEX Protocol™ requires integration with third-party trading platforms (MT4/MT5). We are not affiliated with any broker and do not control trade execution, spreads, slippage, or order fill quality. Your trading results may be affected by your choice of broker.
+                </p>
+
+                <p>
+                  <span className="text-[#888] font-medium">System Performance:</span> While APEX Protocol™ undergoes rigorous testing, software performance can be affected by internet connectivity, server uptime, VPS reliability, and other technical factors. We recommend proper risk management and never risking more than 1-2% of your account per trade.
+                </p>
+
+                <p>
+                  <span className="text-[#888] font-medium">Hypothetical Performance:</span> Any hypothetical or simulated performance results have certain inherent limitations. Unlike actual performance records, simulated results do not represent actual trading and may not reflect the impact of brokerage commissions, slippage, or other real-world trading costs.
+                </p>
+
+                <p className="text-[#EF4444] font-semibold">
+                  By purchasing APEX Protocol™, you acknowledge that you have read, understood, and accepted all risks associated with forex trading and automated trading systems. You agree to use the software at your own risk.
+                </p>
+              </div>
+
+              <div className="text-center text-xs text-[#444] font-[family-name:var(--font-body)] space-y-2">
+                <p>© {new Date().getFullYear()} APEX Protocol™. All rights reserved.</p>
+                <p className="text-[#333]">
+                  This product is not affiliated with, endorsed by, or sponsored by any broker or financial institution.
+                  <br />
+                  Forex trading carries substantial risk and is not suitable for every investor.
+                </p>
+                <div className="flex flex-wrap justify-center gap-4 mt-4 text-[#555]">
+                  <Link href="/privacy" className="hover:text-[#888] transition-colors">Privacy Policy</Link>
+                  <span>•</span>
+                  <Link href="/terms" className="hover:text-[#888] transition-colors">Terms of Service</Link>
+                  <span>•</span>
+                  <Link href="/refund" className="hover:text-[#888] transition-colors">Refund Policy</Link>
+                  <span>•</span>
+                  <Link href="/support" className="hover:text-[#888] transition-colors">Contact</Link>
+                </div>
+              </div>
+            </div>
+          </footer>
 
         </div>
       </div>

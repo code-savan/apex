@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,8 +17,14 @@ import {
   Shield,
   Gift,
   X,
+  Copy,
+  Check,
+  CreditCard,
+  AlertCircle,
+  Coins,
+  Star,
 } from "lucide-react";
-import { LICENSES_REMAINING } from "../constants";
+import { LICENSES_REMAINING, LICENSES_SOLD, LICENSES_TOTAL, testimonials } from "../constants";
 
 // ============ TYPES ============
 
@@ -703,6 +710,28 @@ function QuizInterface({
   );
 }
 
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={() => setIsOpen((prev) => !prev)}
+      className="w-full text-left py-5 border-b border-[#1a1a1a]"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-white font-semibold text-sm md:text-base">{question}</p>
+        <ChevronDown className={`w-5 h-5 text-[#666] transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </div>
+      {isOpen && (
+        <p className="text-[#888] text-sm leading-relaxed mt-3">
+          {answer}
+        </p>
+      )}
+    </button>
+  );
+}
+
 // Results Page
 function ResultsPage({
   userData,
@@ -713,7 +742,196 @@ function ResultsPage({
   answers: QuizAnswers;
   leadScore: number;
 }) {
+  const router = useRouter();
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const checkoutRef = useRef<HTMLDivElement>(null);
+
+  // ===================== INLINE CHECKOUT (copied/adapted from /checkout) =====================
+  const packages = {
+    starter: {
+      name: "Starter Protocol",
+      price: 499,
+      cryptoPrice: 399,
+      features: [
+        "Full APEX Bot (Unlimited MT4/MT5 use)",
+        "APEX Scalper — $5K-$10K scalping power",
+        "23-Min Setup Video",
+        "Monthly Algorithm Updates (FREE forever)",
+        "Private Discord (400+ traders)",
+        "Email Support (under 6 hours)",
+        "30-Day Money-Back Guarantee",
+      ],
+    },
+    elite: {
+      name: "Elite Mastery Bundle",
+      price: 999,
+      cryptoPrice: 799,
+      features: [
+        "Everything in Starter, plus:",
+        "APEX Scalper — $100K+ scalping power ⚡",
+        "Personal Onboarding Call (30-min)",
+        "Advanced Settings Pack (3 configs)",
+        '"Account Resurrection" Protocol',
+        "Priority Support (90-min response)",
+        "Monthly Live Strategy Sessions",
+        "VIP Discord Channel",
+      ],
+    },
+  };
+
+  const cryptoOptions = [
+    { id: "btc", name: "Bitcoin", symbol: "BTC", icon: "₿", color: "#F7931A" },
+    { id: "eth", name: "Ethereum", symbol: "ETH", icon: "Ξ", color: "#627EEA" },
+    { id: "usdt", name: "Tether", symbol: "USDT", icon: "₮", color: "#26A17B" },
+    { id: "sol", name: "Solana", symbol: "SOL", icon: "◎", color: "#9945FF" },
+    { id: "ltc", name: "Litecoin", symbol: "LTC", icon: "Ł", color: "#BFBBBB" },
+  ];
+
+  const [selectedPackageId, setSelectedPackageId] = useState<"starter" | "elite">("starter");
+  const selectedPackage = packages[selectedPackageId];
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "crypto">("card");
+  const [selectedCrypto, setSelectedCrypto] = useState("btc");
+  const [copied, setCopied] = useState(false);
+  const [copiedAmount, setCopiedAmount] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [cryptoPrices, setCryptoPrices] = useState<Record<string, number>>({});
+  const [pricesLoading, setPricesLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    email: userData.email,
+    phone: "",
+    firstName: userData.name.split(" ")[0] || "",
+    lastName: userData.name.split(" ").slice(1).join(" ") || "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const cryptoAddresses: Record<string, string> = {
+    btc: process.env.NEXT_PUBLIC_BTC_ADDRESS || "1F5zkR25VXA9eRSqjWKH7rM7w15qmGgr5F",
+    eth: process.env.NEXT_PUBLIC_ETH_ADDRESS || "0x146530c7e40cffd4c2d1579073d40227d1ad5759",
+    usdt: process.env.NEXT_PUBLIC_USDT_ADDRESS || "TPDckwaqQ8oShd28htUpvmUFWTkk3Mgsfm",
+    sol: process.env.NEXT_PUBLIC_SOL_ADDRESS || "2BG35UaSoyySmnthoQdSCo7LH1w4apfQ3cszCVVVocgp",
+    ltc: process.env.NEXT_PUBLIC_LTC_ADDRESS || "LPsxTKzztyszVhqw6jPzaRWRZ9KHyfj7Nn",
+  };
+
+  const getTotalPrice = () => {
+    return paymentMethod === "crypto" ? selectedPackage.cryptoPrice : selectedPackage.price;
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.firstName) newErrors.firstName = "First name is required";
+    if (!formData.lastName) newErrors.lastName = "Last name is required";
+    if (!formData.email) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Invalid email address";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  useEffect(() => {
+    const fetchPrices = async () => {
+      setPricesLoading(true);
+      try {
+        const response = await fetch("/api/crypto-prices");
+        const data = await response.json();
+        if (data.prices) {
+          setCryptoPrices(data.prices);
+        }
+      } catch (error) {
+        console.error("Failed to fetch crypto prices:", error);
+      } finally {
+        setPricesLoading(false);
+      }
+    };
+
+    fetchPrices();
+    const interval = setInterval(fetchPrices, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyAmountToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedAmount(true);
+    setTimeout(() => setCopiedAmount(false), 2000);
+  };
+
+  const getCryptoAmount = (cryptoId: string) => {
+    const price = cryptoPrices[cryptoId];
+    if (!price) return null;
+    const amount = selectedPackage.cryptoPrice / price;
+    if (cryptoId === "btc") return amount.toFixed(6);
+    if (cryptoId === "eth") return amount.toFixed(5);
+    if (cryptoId === "ltc") return amount.toFixed(4);
+    if (cryptoId === "sol") return amount.toFixed(4);
+    if (cryptoId === "usdt") return amount.toFixed(2);
+    return amount.toFixed(6);
+  };
+
+  const handleCardPayment = async () => {
+    if (!validateForm()) return;
+    setIsProcessing(true);
+    setErrors({});
+
+    try {
+      const response = await fetch("/api/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          packageId: selectedPackageId,
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        const errorMsg = data.message || data.error;
+        setErrors({ submit: errorMsg });
+        return;
+      }
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+
+      setErrors({ submit: "No checkout URL returned" });
+    } catch (error) {
+      console.error("Payment error:", error);
+      setErrors({ submit: "Unable to process payment. Please try crypto payment or contact support." });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCryptoPayment = async () => {
+    if (!validateForm()) return;
+    setIsProcessing(true);
+    setErrors({});
+
+    try {
+      router.push(
+        `/checkout/crypto-pending?package=${selectedPackageId}&crypto=${selectedCrypto}&email=${encodeURIComponent(formData.email)}`
+      );
+    } catch (error) {
+      console.error("Crypto payment error:", error);
+      setErrors({ submit: "Something went wrong. Please try again." });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const currentCrypto = cryptoOptions.find((c) => c.id === selectedCrypto) || cryptoOptions[0];
 
   const lossAmount = answers.total_losses?.amount || 0;
   const educationSpent = answers.education_spent?.amount || 0;
@@ -755,6 +973,53 @@ function ResultsPage({
     }, 500);
   };
 
+  const scrollToCheckout = () => {
+    checkoutRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const selectPackageAndScroll = (pkg: "starter" | "elite") => {
+    setSelectedPackageId(pkg);
+    setTimeout(() => scrollToCheckout(), 50);
+  };
+
+  const faqItems = [
+    {
+      question: "This sounds too good to be true.",
+      answer:
+        "Yeah, so did the internet in 1995. So did Bitcoin in 2010. So did Tesla stock in 2019. But let's be real: You're not skeptical because this seems fake. You're skeptical because you've been burned before. That's fair. That's why we have a 30-day money-back guarantee. Run it. Demo it. Test it. Try to prove it wrong. If it doesn't work, get your money back.",
+    },
+    {
+      question: "I don't have enough money to start.",
+      answer:
+        "You have enough money to keep losing manually? You had $500 for that last course collecting dust? You had $1,200 for the account you just blew? The bot works with accounts as small as $500. Won't make you rich overnight, but it'll GROW. Start small. Compound. That's how everyone in the Discord started.",
+    },
+    {
+      question: "What if it stops working?",
+      answer:
+        "Valid question. The market evolves. Conditions change. That's why APEX updates MONTHLY. We have a team of quants and developers constantly optimizing the algorithm. You get these updates FREE. Forever.",
+    },
+    {
+      question: "I'm not tech-savvy.",
+      answer:
+        "Neither is Marcus (pharmacy tech), Sarah (dental assistant), or Tyler (pours concrete). If you can install an app on your phone, you can set up APEX. We have a 23-minute video that walks you through EVERYTHING.",
+    },
+    {
+      question: "What if I lose money?",
+      answer:
+        "You're ALREADY losing money trading manually. That's why we include a 30-day money-back guarantee. Run it, test it, and if it isn't for you, request a refund.",
+    },
+    {
+      question: "I need to learn to trade properly first.",
+      answer:
+        "No you don't. You don't need to be a mechanic to drive a car. You don't need to be a pilot to fly in a plane. You don't need to be a trader to profit from trading.",
+    },
+    {
+      question: "What about the people who don't succeed?",
+      answer:
+        "Real talk: some people don't see results because they don't let the system run, they override it manually, or they use bad brokers. Follow the setup guide and let it run.",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <div className="py-8 md:py-12 lg:py-16 px-4 relative">
@@ -765,7 +1030,6 @@ function ResultsPage({
 
         <div className="w-full max-w-3xl mx-auto relative z-10">
 
-          {/* Header with Logo */}
           <div className="text-center mb-10 md:mb-12">
             <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-5 bg-[#111] border border-[#2a2a2a] flex items-center justify-center">
               <Image src="/logo.png" alt="APEX Protocol" width={36} height={36} className="object-contain" />
@@ -867,120 +1131,534 @@ function ResultsPage({
             </p>
           </div>
 
-          {/* The Solution */}
-          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-[#0a0a0a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
-                <Image src="/logo.png" alt="APEX" width={28} height={28} className="object-contain" />
-              </div>
-              <div>
-                <p className="text-[#666] text-xs uppercase tracking-wider">Recommended Solution</p>
-                <h3 className="text-white font-bold text-xl">APEX Protocol</h3>
-              </div>
-            </div>
-
-            <p className="text-[#888] text-sm leading-relaxed mb-6">
-              APEX Protocol is an AI-powered trading system designed specifically for traders like you.
-              It operates 24/7, removes emotional decision-making, and adapts to market conditions in real-time.
-            </p>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4">
-                <Clock className="w-5 h-5 text-[#666] mb-2" />
-                <p className="text-white text-sm font-medium">24/7 Trading</p>
-                <p className="text-[#666] text-xs mt-1">Never miss a setup</p>
-              </div>
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4">
-                <Shield className="w-5 h-5 text-[#666] mb-2" />
-                <p className="text-white text-sm font-medium">Zero Emotions</p>
-                <p className="text-[#666] text-xs mt-1">No fear, greed, or revenge</p>
-              </div>
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4">
-                <Zap className="w-5 h-5 text-[#666] mb-2" />
-                <p className="text-white text-sm font-medium">Adaptive AI</p>
-                <p className="text-[#666] text-xs mt-1">Real-time adjustments</p>
-              </div>
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4">
-                <TrendingUp className="w-5 h-5 text-[#666] mb-2" />
-                <p className="text-white text-sm font-medium">Passive Income</p>
-                <p className="text-[#666] text-xs mt-1">Works while you sleep</p>
-              </div>
-            </div>
-
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4 mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Shield className="w-4 h-4 text-[#666]" />
-                <span className="text-white text-sm font-medium">30-Day Money-Back Guarantee</span>
-              </div>
-              <p className="text-[#666] text-xs">
-                Try APEX Protocol risk-free. If you&apos;re not satisfied, get a full refund within 30 days.
-              </p>
-            </div>
-
-            {/* Main CTA */}
-            <button
-              onClick={handleCTAClick}
-              disabled={isRedirecting}
-              className="w-full bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold py-4 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 group"
-            >
-              {isRedirecting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Loading...</span>
-                </>
-              ) : (
-                <>
-                  <span>View APEX Protocol Pricing</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Free Resource */}
           <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center shrink-0">
-                <Gift className="w-5 h-5 text-[#666]" />
+                <Gift className="w-5 h-5 text-[#FFB800]" />
               </div>
               <div className="flex-1">
-                <h3 className="text-white font-semibold mb-1">Free Gold Trading Strategies Guide</h3>
-                <p className="text-[#666] text-sm mb-3">
-                  As a thank you for completing the assessment, we&apos;re sending you our top 3 gold trading strategies PDF.
+                <p className="text-[#666] text-xs uppercase tracking-widest mb-1">Download Freebie (Quick Win)</p>
+                <h3 className="text-white font-semibold text-lg mb-2">Free Gold Trading Strategies Guide</h3>
+                <p className="text-[#888] text-sm leading-relaxed mb-4">
+                  As promised, here&apos;s your free PDF with our top 3 gold trading strategies.
                 </p>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-[#0066FF]" />
-                    <span className="text-[#888]">Sending to: <span className="text-white">{userData.email}</span></span>
-                  </div>
                   <a
-                    href="/api/download-guide"
-                    className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#2a2a2a] text-white text-sm font-medium hover:bg-[#222] transition-all"
+                    href="/TOP-3-GOLD-TRADING-STRATEGIES.pdf"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-bold transition-all"
                   >
                     <Download className="w-4 h-4" />
-                    <span>Download Now</span>
+                    <span>Download Free PDF</span>
                   </a>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-[#0066FF]" />
+                    <span className="text-[#888]">Sent to: <span className="text-white">{userData.email}</span></span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Email Notice */}
-          <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-5 mb-6">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-[#111] border border-[#1a1a1a] flex items-center justify-center shrink-0">
-                <Lock className="w-4 h-4 text-[#666]" />
+          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+            <p className="text-[#666] text-xs uppercase tracking-widest mb-2">Bridge to Offer (Transition)</p>
+            <h2 className="text-white font-bold text-xl md:text-2xl mb-4">🎯 INTRODUCING: APEX PROTOCOL</h2>
+
+            <p className="text-[#888] text-sm leading-relaxed mb-4">
+              The AI system that fixes every problem you just told us about:
+            </p>
+
+            <div className="space-y-2 text-sm mb-5">
+              <div className="flex items-start gap-2 text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                <span><span className="font-semibold">Trades 24/7</span> (catches setups while you sleep)</span>
               </div>
+              <div className="flex items-start gap-2 text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                <span><span className="font-semibold">Zero emotions</span> (no revenge trading, no fear)</span>
+              </div>
+              <div className="flex items-start gap-2 text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                <span><span className="font-semibold">Adapts in real-time</span> (won&apos;t blow up on news)</span>
+              </div>
+              <div className="flex items-start gap-2 text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                <span><span className="font-semibold">Works while you live your life</span></span>
+              </div>
+            </div>
+
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4 mb-5">
+              <p className="text-[#888] text-sm leading-relaxed">
+                You&apos;ve already lost <span className="text-white font-semibold">${lossAmount.toLocaleString()}</span>.
+                You&apos;ve already spent <span className="text-white font-semibold">${educationSpent.toLocaleString()}</span> on things that failed.
+              </p>
+              <p className="text-[#888] text-sm leading-relaxed mt-3">
+                APEX costs less than one losing month.
+              </p>
+              <p className="text-[#888] text-sm leading-relaxed mt-3">
+                And comes with a <span className="text-white font-semibold">30-day money-back guarantee</span>.
+              </p>
+            </div>
+
+            <button
+              onClick={scrollToCheckout}
+              className="w-full bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold py-4 transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <span>Show Me Secure Checkout</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div ref={checkoutRef} className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
               <div>
-                <p className="text-[#888] text-sm">
-                  A copy of your assessment results has been sent to <span className="text-white">{userData.email}</span>.
-                  You may also receive occasional updates about APEX Protocol. You can unsubscribe at any time.
-                </p>
+                <p className="text-[#666] text-xs uppercase tracking-widest mb-2">Direct Checkout</p>
+                <h2 className="text-white font-bold text-xl md:text-2xl">Secure Checkout</h2>
               </div>
+              <div className="text-xs text-[#888] space-y-1">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-[#888]" />
+                  <span>Secure Checkout • 30-Day Money-Back Guarantee</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-[#888]" />
+                  <span>SSL Encrypted • Instant Access</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#888]" />
+                  <span>{LICENSES_SOLD}/{LICENSES_TOTAL} licenses sold</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-5 md:p-6">
+              <div className="flex items-center justify-between gap-4 mb-5">
+                <div>
+                  <p className="text-[#666] text-xs uppercase tracking-widest">Checkout</p>
+                  <h4 className="text-white font-semibold text-lg">Get Instant Access</h4>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-[#666]">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Secure Payment</span>
+                </div>
+              </div>
+
+              {/* Package Selection */}
+              <div className="space-y-3 mb-6">
+                <button
+                  onClick={() => setSelectedPackageId("starter")}
+                  className={`w-full p-4 text-left transition-all border ${
+                    selectedPackageId === "starter"
+                      ? "bg-[#0b1b33] border-[#0066FF]"
+                      : "bg-[#0a0a0a] border-[#1a1a1a] hover:border-[#2a2a2a]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                        selectedPackageId === "starter" ? "border-[#0066FF] bg-[#0066FF]" : "border-[#444]"
+                      }`}>
+                        {selectedPackageId === "starter" && <Check className="w-3.5 h-3.5 text-white" />}
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold">{packages.starter.name}</p>
+                        <p className="text-[#666] text-xs">Full bot access + community</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-white font-bold">${packages.starter.price}</p>
+                      <p className="text-[#10B981] text-[11px]">${packages.starter.cryptoPrice} with crypto</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setSelectedPackageId("elite")}
+                  className={`w-full p-4 text-left transition-all border relative ${
+                    selectedPackageId === "elite"
+                      ? "bg-[#2a1a00] border-[#FFB800]"
+                      : "bg-[#0a0a0a] border-[#1a1a1a] hover:border-[#2a2a2a]"
+                  }`}
+                >
+                  <div className="absolute -top-3 left-4 px-3 py-1 bg-[#FFB800] text-black text-[10px] font-bold uppercase tracking-wide">
+                    Most Popular
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                        selectedPackageId === "elite" ? "border-[#FFB800] bg-[#FFB800]" : "border-[#444]"
+                      }`}>
+                        {selectedPackageId === "elite" && <Check className="w-3.5 h-3.5 text-black" />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-white font-semibold">{packages.elite.name}</p>
+                          <Star className="w-4 h-4 text-[#FFB800] fill-[#FFB800]" />
+                        </div>
+                        <p className="text-[#666] text-xs">1-on-1 onboarding + VIP support</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-white font-bold">${packages.elite.price}</p>
+                      <p className="text-[#10B981] text-[11px]">${packages.elite.cryptoPrice} with crypto</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Contact Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="block text-xs text-[#888] mb-1.5 font-medium">First Name</label>
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    className={`w-full bg-[#000] border ${errors.firstName ? "border-[#EF4444]" : "border-[#222]"} px-3 py-2.5 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]/40 transition-all`}
+                    placeholder="John"
+                  />
+                  {errors.firstName && <p className="text-[#EF4444] text-xs mt-1.5">{errors.firstName}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs text-[#888] mb-1.5 font-medium">Last Name</label>
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    className={`w-full bg-[#000] border ${errors.lastName ? "border-[#EF4444]" : "border-[#222]"} px-3 py-2.5 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]/40 transition-all`}
+                    placeholder="Doe"
+                  />
+                  {errors.lastName && <p className="text-[#EF4444] text-xs mt-1.5">{errors.lastName}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                <div>
+                  <label className="block text-xs text-[#888] mb-1.5 font-medium">Email Address</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className={`w-full bg-[#000] border ${errors.email ? "border-[#EF4444]" : "border-[#222]"} px-3 py-2.5 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]/40 transition-all`}
+                    placeholder="john@example.com"
+                  />
+                  {errors.email && <p className="text-[#EF4444] text-xs mt-1.5">{errors.email}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs text-[#888] mb-1.5 font-medium">Phone (Optional)</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full bg-[#000] border border-[#222] px-3 py-2.5 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]/40 transition-all"
+                    placeholder="+1 (555) 000-0000"
+                  />
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                <button
+                  onClick={() => setPaymentMethod("card")}
+                  className={`px-4 py-3 font-bold text-sm transition-all flex items-center justify-center gap-2 border ${
+                    paymentMethod === "card" ? "bg-[#0066FF] border-[#0066FF] text-white" : "bg-[#000] border-[#222] text-[#888] hover:border-[#333]"
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Card
+                </button>
+                <button
+                  onClick={() => setPaymentMethod("crypto")}
+                  className={`px-4 py-3 font-bold text-sm transition-all flex items-center justify-center gap-2 border ${
+                    paymentMethod === "crypto" ? "bg-[#0066FF] border-[#0066FF] text-white" : "bg-[#000] border-[#222] text-[#888] hover:border-[#333]"
+                  }`}
+                >
+                  <Coins className="w-4 h-4" />
+                  Crypto
+                </button>
+              </div>
+
+              {paymentMethod === "crypto" && (
+                <div className="mb-6">
+                  <div className="grid grid-cols-5 gap-2 mb-4">
+                    {cryptoOptions.map((crypto) => (
+                      <button
+                        key={crypto.id}
+                        onClick={() => setSelectedCrypto(crypto.id)}
+                        className={`py-3 border transition-all ${
+                          selectedCrypto === crypto.id ? "bg-[#111] border-white" : "bg-[#000] border-[#222] hover:border-[#333]"
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-lg" style={{ color: crypto.color }}>
+                            {crypto.icon}
+                          </span>
+                          <span className="text-[10px] text-[#888] font-semibold">{crypto.symbol}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="bg-[#000] border border-[#222] p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs text-[#888] font-semibold">Send exactly:</span>
+                      {pricesLoading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-[#333] border-t-white rounded-full animate-spin" />
+                          <span className="text-xs text-[#888]">Loading...</span>
+                        </div>
+                      ) : getCryptoAmount(selectedCrypto) ? (
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-sm" style={{ color: currentCrypto.color }}>
+                            {getCryptoAmount(selectedCrypto)} {currentCrypto.symbol}
+                          </span>
+                          <button
+                            onClick={() => copyAmountToClipboard(getCryptoAmount(selectedCrypto)!)}
+                            className="p-2 hover:bg-[#111] transition-colors"
+                          >
+                            {copiedAmount ? <Check className="w-4 h-4 text-[#10B981]" /> : <Copy className="w-4 h-4 text-[#888]" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[#888]">—</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-[#888] font-semibold">Wallet address</span>
+                      <button
+                        onClick={() => copyToClipboard(cryptoAddresses[selectedCrypto])}
+                        className="text-xs text-[#0066FF] hover:opacity-80 transition-opacity flex items-center gap-1"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" /> Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" /> Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <code className="block text-[11px] text-[#777] bg-[#0a0a0a] border border-[#1a1a1a] p-3 break-all font-mono">
+                      {cryptoAddresses[selectedCrypto]}
+                    </code>
+                  </div>
+                </div>
+              )}
+
+              {errors.submit && (
+                <div className="mb-5 bg-[#EF4444]/10 border border-[#EF4444]/30 p-4 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" />
+                  <p className="text-sm text-[#EF4444]">{errors.submit}</p>
+                </div>
+              )}
+
+              <button
+                onClick={paymentMethod === "card" ? handleCardPayment : handleCryptoPayment}
+                disabled={isProcessing}
+                className="w-full bg-white text-black font-bold py-3.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    <span>{paymentMethod === "card" ? `Pay $${getTotalPrice()}` : `Confirm Payment — $${getTotalPrice()}`}</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Availability Notice */}
+          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+            <p className="text-[#666] text-xs uppercase tracking-widest mb-2">Objection Crusher</p>
+            <h2 className="text-white font-bold text-xl md:text-2xl mb-4">❓ “Is This Really For Me?”</h2>
+
+            <p className="text-[#888] text-sm leading-relaxed mb-4">
+              Based on your quiz answers, <span className="text-white font-semibold">yes</span>.
+            </p>
+
+            <div className="space-y-2 text-sm mb-5">
+              <div className="flex items-start gap-2 text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                <span>You&apos;ve lost money to emotional trading ✅</span>
+              </div>
+              <div className="flex items-start gap-2 text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                <span>You miss trades because you&apos;re not available 24/7 ✅</span>
+              </div>
+              <div className="flex items-start gap-2 text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                <span>You want to solve this {getUrgencyText()} ✅</span>
+              </div>
+              {answers.investment_capacity?.label && (
+                <div className="flex items-start gap-2 text-white">
+                  <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                  <span>You can invest {answers.investment_capacity.label} ✅</span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-[#888] text-sm leading-relaxed mb-6">
+              APEX solves all of this. And costs less than you expected.
+              <span className="text-white font-semibold"> Still unsure?</span> 30-day guarantee. Zero risk.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <button
+                onClick={() => selectPackageAndScroll("starter")}
+                className="bg-[#0a0a0a] border border-[#1a1a1a] p-5 text-left hover:border-[#2a2a2a] transition-all"
+              >
+                <p className="text-white font-bold text-lg">Get Starter</p>
+                <p className="text-[#888] text-sm mt-1">$499 / $399 (crypto)</p>
+                <p className="text-[#666] text-xs mt-3">Second chance to buy → scrolls to secure checkout</p>
+              </button>
+              <button
+                onClick={() => selectPackageAndScroll("elite")}
+                className="bg-[#0a0a0a] border border-[#FFB800]/40 p-5 text-left hover:border-[#FFB800]/70 transition-all relative"
+              >
+                <div className="absolute -top-3 left-4 px-3 py-1 bg-[#FFB800] text-black text-[10px] font-bold uppercase tracking-wide">
+                  Most Popular
+                </div>
+                <p className="text-white font-bold text-lg">Get Elite</p>
+                <p className="text-[#888] text-sm mt-1">$999 / $799 (crypto)</p>
+                <p className="text-[#666] text-xs mt-3">Second chance to buy → scrolls to secure checkout</p>
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+            <div className="text-center mb-6 w-full">
+              <div className="text-white font-bold text-lg w-full h-[2px] border border-white"></div>
+              <h2 className="text-white font-bold text-xl md:text-2xl my-3">🛡️ 30-DAY MONEY-BACK GUARANTEE</h2>
+              <div className="text-white font-bold text-lg w-full h-[2px] border border-white"></div>
+            </div>
+
+            <p className="text-[#888] text-sm leading-relaxed mb-4">
+              Run APEX for 30 days.
+            </p>
+
+            <div className="space-y-2 text-sm mb-5">
+              <div className="flex items-start gap-2 text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                <span>Consistent execution without emotions</span>
+              </div>
+              <div className="flex items-start gap-2 text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                <span>Trades you would&apos;ve missed manually</span>
+              </div>
+              <div className="flex items-start gap-2 text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5" />
+                <span>A clear edge over your old approach</span>
+              </div>
+            </div>
+
+            <p className="text-[#888] text-sm leading-relaxed">
+              Request a full refund. Keep the training materials.
+            </p>
+            <p className="text-[#888] text-sm leading-relaxed mt-2">
+              No questions. No hassle.
+            </p>
+            <p className="text-[#888] text-sm leading-relaxed mt-2">
+              Why? Because we know it works.
+            </p>
+          </div>
+
+          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+            <div className="text-center mb-6">
+              <p className="text-[#666] text-xs uppercase tracking-widest mb-2">FAQ</p>
+              <h2 className="text-white font-bold text-xl md:text-2xl">Final Objections</h2>
+              <p className="text-[#888] text-sm mt-2">Let me address every objection.</p>
+            </div>
+
+            <div className="border-t border-[#1a1a1a]">
+              {faqItems.map((item, idx) => (
+                <FAQItem key={idx} question={item.question} answer={item.answer} />
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+            <p className="text-[#666] text-xs uppercase tracking-widest mb-2">Social Proof</p>
+            <h2 className="text-white font-bold text-xl md:text-2xl mb-6">Real Results</h2>
+
+            <div className="grid md:grid-cols-3 gap-4 mb-8">
+              {[1, 2, 3].map((index) => (
+                <div key={index} className="bg-[#0a0a0a] border border-[#1a1a1a] p-3">
+                  <video
+                    controls
+                    preload="none"
+                    poster={`/testimonial-${index}-thumb.png`}
+                    className="w-full"
+                  >
+                    <source src={`/testimonial-${index}.mp4`} type="video/mp4" />
+                  </video>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 mb-10">
+              {testimonials.map((t, idx) => (
+                <div key={idx} className="bg-[#0a0a0a] border border-[#1a1a1a] p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Image src={t.avatar} alt={t.name} width={40} height={40} className="object-cover" />
+                    <div>
+                      <p className="text-white text-sm font-semibold">{t.name}</p>
+                      <p className="text-[#666] text-xs">{t.handle}</p>
+                    </div>
+                  </div>
+                  <p className="text-[#ccc] text-sm leading-relaxed">“{t.quote}”</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center mb-6">
+              <h3 className="text-white font-bold text-lg">From Our Community</h3>
+              <p className="text-[#888] text-sm">Real posts from real traders in our private Discord</p>
+            </div>
+
+            <div className="columns-1 md:columns-2 gap-4 space-y-4">
+              {Array.from({ length: 14 }, (_, i) => i + 1).map((num) => (
+                <div key={num} className="break-inside-avoid mb-4">
+                  <div className="relative overflow-hidden border border-[#1a1a1a] bg-[#0a0a0a]">
+                    <Image src={`/community/${num}.png`} alt={`Community testimonial ${num}`} width={900} height={900} className="w-full h-auto" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 mb-6">
+            <div className="text-center mb-6">
+              <h2 className="text-white font-bold text-xl md:text-2xl">⏰ FINAL REMINDER</h2>
+            </div>
+            <p className="text-[#888] text-sm leading-relaxed mb-3">We&apos;re capping licenses at 500 users.</p>
+            <p className="text-white font-semibold mb-6">Current: {LICENSES_SOLD}/{LICENSES_TOTAL} SOLD</p>
+
+            <p className="text-[#888] text-sm leading-relaxed mb-2">
+              Once we hit 500, we close for 60–90 days minimum.
+            </p>
+            <p className="text-[#888] text-sm leading-relaxed mb-6">
+              Last batch sold out in 11 hours. Don&apos;t be the person refreshing the page in 2 months hoping we reopened.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <button onClick={() => selectPackageAndScroll("starter")} className="w-full bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold py-4 transition-all">
+                GET STARTER ($499 / $399)
+              </button>
+              <button onClick={() => selectPackageAndScroll("elite")} className="w-full bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold py-4 transition-all">
+                GET ELITE ($999 / $799)
+              </button>
+            </div>
+
+            <button onClick={handleCTAClick} disabled={isRedirecting} className="mt-6 text-[#888] text-sm hover:text-white transition-colors">
+              View Full Sales Page →
+            </button>
+          </div>
+
           <div className="text-center">
             <p className="text-[#666] text-xs">
               Only <span className="text-[#888]">{LICENSES_REMAINING} spots</span> remaining · Limited availability
@@ -1122,13 +1800,13 @@ export default function QuizPage() {
         }),
       }).catch(() => console.log("Quiz complete API save failed (non-blocking)"));
 
-      // Send quiz completion email with PDF and video links
+      // Send quiz completion email (non-blocking)
       await fetch("/api/send-quiz-completion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: userData.email,
-          firstName: userData.name.split(' ')[0],
+          firstName: userData.name.split(" ")[0],
           leadScore: finalScore,
           losses: answers.total_losses?.amount,
           educationSpent: answers.education_spent?.amount,

@@ -44,7 +44,7 @@ export const testimonials = [
 
 // License limits
 export const LICENSES_TOTAL = 500;
-export const LICENSES_SOLD = 481;
+export const LICENSES_SOLD = 487;
 export const LICENSES_REMAINING = LICENSES_TOTAL - LICENSES_SOLD;
 
 // Countdown duration in days

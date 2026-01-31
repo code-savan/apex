@@ -1132,34 +1132,7 @@ function ResultsPage({
             </p>
           </div>
 
-          {/* Download Freebie (Quick Win) */}
-          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center shrink-0">
-                <Gift className="w-5 h-5 text-[#FFB800]" />
-              </div>
-              <div className="flex-1">
-                <p className="text-[#666] text-xs uppercase tracking-widest mb-1">Download Freebie (Quick Win)</p>
-                <h3 className="text-white font-semibold text-lg mb-2">Free Gold Trading Strategies Guide</h3>
-                <p className="text-[#888] text-sm leading-relaxed mb-4">
-                  As promised, here&apos;s your free PDF with our top 3 gold trading strategies.
-                </p>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <a
-                    href="/TOP-3-GOLD-TRADING-STRATEGIES.pdf"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-bold transition-all"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Download Free PDF</span>
-                  </a>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-[#0066FF]" />
-                    <span className="text-[#888]">Sent to: <span className="text-white">{userData.email}</span></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+
 
           {/* Bridge to Offer (Transition) */}
           <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6">
@@ -1673,6 +1646,35 @@ function ResultsPage({
             <p className="text-[#666] text-xs">
               Only <span className="text-[#888]">{LICENSES_REMAINING} spots</span> remaining · Limited availability
             </p>
+          </div>
+
+           {/* Download Freebie (Quick Win) */}
+          <div className="bg-[#111] border border-[#1a1a1a] p-3 md:p-8 mb-4 md:mb-6 mt-5">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center shrink-0">
+                <Gift className="w-5 h-5 text-[#FFB800]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[#666] text-xs uppercase tracking-widest mb-1">Download Freebie (Quick Win)</p>
+                <h3 className="text-white font-semibold text-lg mb-2">Free Gold Trading Strategies Guide</h3>
+                <p className="text-[#888] text-sm leading-relaxed mb-4">
+                  As promised, here&apos;s your free PDF with our top 3 gold trading strategies.
+                </p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <a
+                    href="/TOP-3-GOLD-TRADING-STRATEGIES.pdf"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-bold transition-all"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download Free PDF</span>
+                  </a>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-[#0066FF]" />
+                    <span className="text-[#888]">Sent to: <span className="text-white">{userData.email}</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Footer */}

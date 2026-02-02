@@ -49,12 +49,40 @@ interface VerificationRequest {
   packageName: string;
   expectedAmount: number;
   packageId: string;
+  screenshotUrl?: string;
 }
+
+type VerificationStatus = {
+  status: string;
+  message: string;
+  confirmations?: number;
+};
+
+type AdminNotificationPayload = {
+  orderId: string;
+  email: string;
+  firstName: string;
+  packageName: string;
+  crypto: string;
+  txHash: string;
+  amount: number;
+  packageId: string;
+  verificationStatus: VerificationStatus;
+  screenshotUrl: string;
+};
 
 export async function POST(request: NextRequest) {
   try {
     const body: VerificationRequest = await request.json();
-    const { txHash, crypto, email, firstName, packageName, expectedAmount, packageId } = body;
+    const { txHash, crypto, email, firstName, packageName, expectedAmount, packageId, screenshotUrl } = body;
+
+    if (!txHash || !txHash.trim()) {
+      return NextResponse.json({ error: "Missing transaction hash" }, { status: 400 });
+    }
+
+    if (!screenshotUrl || typeof screenshotUrl !== "string" || !screenshotUrl.trim()) {
+      return NextResponse.json({ error: "Missing transaction screenshot" }, { status: 400 });
+    }
 
     // Generate order ID
     const orderId = `APEX-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
@@ -65,6 +93,7 @@ export async function POST(request: NextRequest) {
       txHash,
       email,
       amount: expectedAmount,
+      screenshotUrl,
     });
 
     // Verify transaction on blockchain (using free APIs)
@@ -92,6 +121,7 @@ export async function POST(request: NextRequest) {
       amount: expectedAmount,
       packageId,
       verificationStatus: verificationResult,
+      screenshotUrl,
     });
 
     // Save to Google Sheets
@@ -341,11 +371,13 @@ async function sendVerificationEmail(data: {
 }
 
 // Send admin notification with verification status
-async function sendAdminNotification(data: any) {
+async function sendAdminNotification(data: AdminNotificationPayload) {
   if (!resend) return;
 
-  const statusColor = data.verificationStatus.status === "confirmed" ? "#10B981" :
-                      data.verificationStatus.status === "pending" ? "#F59E0B" : "#EF4444";
+  const payload = data;
+
+  const statusColor = payload.verificationStatus.status === "confirmed" ? "#10B981" :
+                      payload.verificationStatus.status === "pending" ? "#F59E0B" : "#EF4444";
 
   const emailHtml = `
 <!DOCTYPE html>
@@ -369,7 +401,7 @@ async function sendAdminNotification(data: any) {
             <td style="padding: 24px;">
               <div style="background-color: ${statusColor}20; border: 1px solid ${statusColor}; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
                 <p style="color: ${statusColor}; font-size: 13px; font-weight: 600; margin: 0;">
-                  ${data.verificationStatus.status.toUpperCase()}: ${data.verificationStatus.message}
+                  ${payload.verificationStatus.status.toUpperCase()}: ${payload.verificationStatus.message}
                 </p>
               </div>
 
@@ -377,19 +409,19 @@ async function sendAdminNotification(data: any) {
                 <table style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="padding: 6px 0; color: #666; font-size: 13px;">order</td>
-                    <td style="padding: 6px 0; color: #111; font-family: monospace; font-size: 12px; text-align: right;">${data.orderId}</td>
+                    <td style="padding: 6px 0; color: #111; font-family: monospace; font-size: 12px; text-align: right;">${payload.orderId}</td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; color: #666; font-size: 13px;">package</td>
-                    <td style="padding: 6px 0; color: #111; font-size: 13px; text-align: right;">${data.packageName}</td>
+                    <td style="padding: 6px 0; color: #111; font-size: 13px; text-align: right;">${payload.packageName}</td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; color: #666; font-size: 13px;">crypto</td>
-                    <td style="padding: 6px 0; color: #111; font-size: 13px; text-align: right; font-weight: 600;">${data.crypto}</td>
+                    <td style="padding: 6px 0; color: #111; font-size: 13px; text-align: right; font-weight: 600;">${payload.crypto}</td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; color: #666; font-size: 13px;">amount</td>
-                    <td style="padding: 6px 0; color: #10B981; font-size: 16px; font-weight: 600; text-align: right;">$${data.amount}</td>
+                    <td style="padding: 6px 0; color: #10B981; font-size: 16px; font-weight: 600; text-align: right;">$${payload.amount}</td>
                   </tr>
                 </table>
               </div>
@@ -399,21 +431,28 @@ async function sendAdminNotification(data: any) {
                 <table style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="padding: 4px 0; color: #666; font-size: 13px;">name</td>
-                    <td style="padding: 4px 0; color: #111; font-size: 13px; text-align: right;">${data.firstName}</td>
+                    <td style="padding: 4px 0; color: #111; font-size: 13px; text-align: right;">${payload.firstName}</td>
                   </tr>
                   <tr>
                     <td style="padding: 4px 0; color: #666; font-size: 13px;">email</td>
-                    <td style="padding: 4px 0; text-align: right;"><a href="mailto:${data.email}" style="color: #111; text-decoration: underline; font-size: 13px;">${data.email}</a></td>
+                    <td style="padding: 4px 0; text-align: right;"><a href="mailto:${payload.email}" style="color: #111; text-decoration: underline; font-size: 13px;">${payload.email}</a></td>
                   </tr>
                 </table>
               </div>
 
               <div style="background-color: #000; border-radius: 6px; padding: 12px;">
                 <p style="color: #888; font-size: 11px; margin: 0 0 6px;">TX Hash:</p>
-                <p style="color: #fff; font-size: 10px; font-family: monospace; margin: 0; word-break: break-all;">${data.txHash}</p>
+                <p style="color: #fff; font-size: 10px; font-family: monospace; margin: 0; word-break: break-all;">${payload.txHash}</p>
               </div>
 
-              ${data.verificationStatus.status === "confirmed" ? `
+              <div style="background-color: #000; border-radius: 6px; padding: 12px; margin-top: 12px;">
+                <p style="color: #888; font-size: 11px; margin: 0 0 6px;">Transaction Screenshot:</p>
+                <p style="margin: 0;">
+                  <a href="${payload.screenshotUrl}" target="_blank" rel="noreferrer" style="color: #2563eb; font-size: 12px; text-decoration: underline; word-break: break-all;">View uploaded screenshot</a>
+                </p>
+              </div>
+
+              ${payload.verificationStatus.status === "confirmed" ? `
               <div style="background-color: #10B981; border-radius: 6px; padding: 12px; margin-top: 16px;">
                 <p style="color: #fff; margin: 0; font-size: 13px;">✓ VERIFIED - Send access details to customer</p>
               </div>
